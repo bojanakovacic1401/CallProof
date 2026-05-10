@@ -18,13 +18,13 @@ type Signal = {
 
 const signals: Signal[] = [
   {
-    label: "Asks for verification code",
-    score: 32,
+    label: "Requests a verification code",
+    score: 34,
     tactic: "Verification code request",
     attackType: "OTP theft",
     patterns: [
       /\b(code|otp|verification code|six digit|6 digit|one time password)\b/i,
-      /\b(read|confirm|tell|share|send).{0,40}\b(code|otp|verification)\b/i,
+      /\b(read|confirm|tell|share|send).{0,45}\b(code|otp|verification)\b/i,
     ],
     evidenceReason:
       "Scammers often ask for verification codes to take over accounts.",
@@ -46,7 +46,7 @@ const signals: Signal[] = [
       "Urgency pressures the victim to act before thinking or verifying.",
   },
   {
-    label: "Impersonates authority",
+    label: "Uses authority pressure",
     score: 20,
     tactic: "Authority",
     attackType: "Bank impersonation",
@@ -64,7 +64,7 @@ const signals: Signal[] = [
   },
   {
     label: "Discourages independent verification",
-    score: 20,
+    score: 22,
     tactic: "Isolation",
     patterns: [
       /\bdo not hang up\b/i,
@@ -76,10 +76,10 @@ const signals: Signal[] = [
       /\bkeep this private\b/i,
     ],
     evidenceReason:
-      "Scammers often isolate the victim from checking with trusted sources.",
+      "Scammers isolate the victim from checking with trusted sources.",
   },
   {
-    label: "Suspicious link",
+    label: "Contains suspicious link",
     score: 24,
     tactic: "Suspicious link",
     attackType: "Delivery phishing",
@@ -112,7 +112,7 @@ const signals: Signal[] = [
   },
   {
     label: "Family emergency pressure",
-    score: 28,
+    score: 30,
     tactic: "Fear",
     attackType: "Family emergency scam",
     patterns: [
@@ -128,7 +128,7 @@ const signals: Signal[] = [
   },
   {
     label: "Too-good-to-be-true offer",
-    score: 26,
+    score: 28,
     tactic: "Too good to be true",
     attackType: "Investment scam",
     patterns: [
@@ -175,7 +175,7 @@ function getRiskLevel(score: number): RiskLevel {
   return "Low";
 }
 
-function getConfidence(score: number, evidenceCount: number): "Low" | "Medium" | "High" {
+function getConfidence(score: number, evidenceCount: number) {
   if (score >= 75 && evidenceCount >= 3) return "High";
   if (score >= 40 && evidenceCount >= 2) return "Medium";
   return "Low";
@@ -196,39 +196,42 @@ function pickAttackType(types: AttackType[], text: string): AttackType {
   if (lowered.includes("password") || lowered.includes("account")) {
     return "Account takeover";
   }
-  if (lowered.includes("link") || lowered.includes("http")) return "Generic phishing";
+  if (lowered.includes("http")) return "Generic phishing";
 
   return "Unknown";
 }
 
-function extractEvidence(text: string, pattern: RegExp, reason: string): EvidenceItem | null {
+function extractEvidence(
+  text: string,
+  pattern: RegExp,
+  reason: string
+): EvidenceItem | null {
   const match = text.match(pattern);
+
   if (!match?.[0]) return null;
 
-  const snippet = match[0].length > 120 ? `${match[0].slice(0, 120)}...` : match[0];
-
   return {
-    text: snippet,
+    text: match[0].length > 120 ? `${match[0].slice(0, 120)}...` : match[0],
     reason,
   };
 }
 
 function buildSummary(score: number, attackType: AttackType, redFlags: string[]) {
   if (score >= 85) {
-    return `This looks highly likely to be a scam. The strongest pattern is ${attackType.toLowerCase()}, with signals such as ${redFlags
+    return `This is highly likely to be a scam. The strongest pattern is ${attackType.toLowerCase()}, with signals such as ${redFlags
       .slice(0, 3)
       .join(", ")}.`;
   }
 
   if (score >= 65) {
-    return `This message or call contains multiple scam indicators. It should be treated as high risk before taking any action.`;
+    return "This content contains multiple scam indicators and should be treated as high risk before taking any action.";
   }
 
   if (score >= 35) {
-    return `This content has some suspicious signals. It may not be definitely malicious, but it should be verified through official channels.`;
+    return "This content has suspicious signals. It should be verified through official channels before responding.";
   }
 
-  return `This content does not show strong scam indicators, but it is still best to avoid sharing private codes, payment details, or personal information.`;
+  return "No strong scam pattern was detected, but you should still avoid sharing codes, payment details, or personal information.";
 }
 
 function buildSafeReply(score: number, attackType: AttackType) {
@@ -278,7 +281,7 @@ function buildNextSteps(score: number, attackType: AttackType): string[] {
       "Do not share sensitive information yet.",
       "Check the sender or caller through an official source.",
       "Avoid clicking links until verified.",
-      "Ask someone you trust if you are unsure.",
+      "Ask someone you trust if unsure.",
     ];
   }
 
@@ -362,14 +365,12 @@ export function analyzeScamContent({
     }
   }
 
-  if (mode === "audio" || mode === "transcript") {
-    score += 4;
-  }
-
   const lowered = text.toLowerCase();
 
+  if (mode === "audio" || mode === "transcript") score += 4;
+
   if (lowered.includes("bank") && lowered.includes("code")) {
-    score += 16;
+    score += 18;
     attackTypes.push("Bank impersonation", "OTP theft");
   }
 

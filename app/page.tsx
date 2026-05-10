@@ -23,15 +23,26 @@ import {
   Users,
 } from "lucide-react";
 
-import { demoCases, defaultDemoCase, simulatedAudioTranscript } from "@/lib/demoCases";
+import {
+  defaultDemoCase,
+  demoCases,
+  simulatedAudioTranscript,
+} from "@/lib/demoCases";
 import { analyzeScamContent } from "@/lib/scamEngine";
-import type { DemoCase, InputMode, ScanHistoryItem, ScamAnalysis } from "@/lib/types";
+import type {
+  DemoCase,
+  InputMode,
+  ScamAnalysis,
+  ScanHistoryItem,
+} from "@/lib/types";
 
-function getRiskColor(risk: string) {
-  if (risk === "Critical") return "text-red-200 border-red-300/20 bg-red-300/10";
-  if (risk === "High") return "text-orange-200 border-orange-300/20 bg-orange-300/10";
-  if (risk === "Medium") return "text-yellow-200 border-yellow-300/20 bg-yellow-300/10";
-  return "text-emerald-200 border-emerald-300/20 bg-emerald-300/10";
+function getRiskStyle(risk: string) {
+  if (risk === "Critical") return "border-red-300/30 bg-red-400/10 text-red-100";
+  if (risk === "High")
+    return "border-orange-300/30 bg-orange-400/10 text-orange-100";
+  if (risk === "Medium")
+    return "border-amber-300/30 bg-amber-400/10 text-amber-100";
+  return "border-emerald-300/30 bg-emerald-400/10 text-emerald-100";
 }
 
 function createHistoryItem({
@@ -45,7 +56,6 @@ function createHistoryItem({
     id: `${Date.now()}-${Math.random()}`,
     createdAt: new Date().toISOString(),
     mode,
-    title: analysis.attackType,
     score: analysis.scamProbability,
     riskLevel: analysis.riskLevel,
     attackType: analysis.attackType,
@@ -61,7 +71,7 @@ function downloadReport({
   mode: InputMode;
   analysis: ScamAnalysis;
 }) {
-  const report = `CallProof Scam Analysis Report
+  const report = `CallProof Safety Report
 
 Mode: ${mode}
 Scam probability: ${analysis.scamProbability}%
@@ -91,7 +101,7 @@ ${analysis.safeReply}
 Next steps:
 ${analysis.nextSteps.map((step) => `- ${step}`).join("\n")}
 
-Analyzed content:
+Original content:
 ${input}
 `;
 
@@ -123,6 +133,7 @@ export default function Home() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem("callproof-history");
+
     if (!saved) return;
 
     try {
@@ -146,15 +157,11 @@ export default function Home() {
 
   async function runAnalysis() {
     setIsAnalyzing(true);
-
-    await new Promise((resolve) => setTimeout(resolve, 900));
-
+    await new Promise((resolve) => setTimeout(resolve, 850));
     setHasAnalyzed(true);
-    setHistory((prev) => [
-      createHistoryItem({ mode, analysis }),
-      ...prev,
-    ].slice(0, 8));
-
+    setHistory((prev) =>
+      [createHistoryItem({ mode, analysis }), ...prev].slice(0, 8)
+    );
     setIsAnalyzing(false);
   }
 
@@ -164,28 +171,23 @@ export default function Home() {
     setMode("audio");
     setAudioFileName(file.name);
     setSelectedDemoId("fake-bank-call");
-    setHasAnalyzed(false);
-
     setInput(simulatedAudioTranscript);
+    setHasAnalyzed(false);
   }
-
-  const heroRisk = analysis.riskLevel;
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050816] text-slate-50">
-      <div className="radial-glow absolute inset-0" />
-      <div className="cyber-grid absolute inset-0 opacity-80" />
-      <div className="noise pointer-events-none absolute inset-0" />
+      <div className="soft-glow absolute inset-0" />
+      <div className="grid-bg absolute inset-0 opacity-80" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1480px] px-5 py-6 lg:px-6">
-        <nav className="mb-10 flex items-center justify-between rounded-full border border-cyan-300/15 bg-black/30 px-5 py-3 backdrop-blur-xl">
+      <div className="relative z-10 mx-auto w-full max-w-[1500px] px-5 py-5 lg:px-6">
+        <nav className="mb-5 flex items-center justify-between rounded-[1.5rem] border border-cyan-200/15 bg-black/35 px-5 py-4 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/25 bg-cyan-300/10 text-cyan-200">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950">
               <Shield className="h-5 w-5" />
             </div>
-
             <div>
-              <p className="text-sm font-bold tracking-[0.35em] text-white">
+              <p className="text-sm font-black tracking-[0.34em] text-white">
                 CALLPROOF
               </p>
               <p className="text-xs text-white/40">
@@ -196,78 +198,63 @@ export default function Home() {
 
           <button
             onClick={runAnalysis}
-            className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-bold text-slate-950 transition hover:bg-white"
+            className="rounded-full bg-cyan-300 px-5 py-2 text-sm font-black text-slate-950 transition hover:bg-white"
           >
-            Analyze now
+            Analyze
           </button>
         </nav>
 
-        <section className="mb-8 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[2rem] border border-cyan-300/15 bg-black/35 p-8 backdrop-blur-xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold text-cyan-200">
-              <Radar className="h-4 w-4" />
-              AI-assisted scam detection
-            </div>
+        <section className="mb-6 grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
+          <HeroCard analysis={analysis} onDemo={() => loadDemo(demoCases[0])} />
 
-            <h1 className="max-w-4xl text-5xl font-black tracking-tight text-white md:text-7xl">
-              Know if a call or message is{" "}
-              <span className="text-cyan-300">safe</span> before you respond.
-            </h1>
+          <TopAnalyzer
+            mode={mode}
+            setMode={setMode}
+            input={input}
+            setInput={setInput}
+            familyMode={familyMode}
+            setFamilyMode={setFamilyMode}
+            isAnalyzing={isAnalyzing}
+            onAnalyze={runAnalysis}
+            onAudioUpload={handleAudioUpload}
+            audioFileName={audioFileName}
+          />
+        </section>
 
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/55">
-              CallProof analyzes suspicious messages, call transcripts, and uploaded
-              audio to detect scam probability, manipulation tactics, red flags,
-              and the safest next action.
-            </p>
+        <section className="mb-6 grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
+          <ScoreCard analysis={analysis} isAnalyzing={isAnalyzing} />
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              <button
-                onClick={runAnalysis}
-                className="rounded-full bg-white px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
-              >
-                Run scam analysis
-              </button>
-
-              <button
-                onClick={() => loadDemo(demoCases[0])}
-                className="rounded-full border border-white/10 bg-white/[0.04] px-6 py-3 text-sm font-bold text-white transition hover:border-cyan-300/40"
-              >
-                Try fake bank call
-              </button>
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <div className={`rounded-[2rem] border p-6 backdrop-blur-xl ${getRiskColor(heroRisk)}`}>
-              <p className="text-xs uppercase tracking-[0.22em] opacity-75">
-                Scam probability
-              </p>
-              <p className="mt-3 text-6xl font-black">{analysis.scamProbability}%</p>
-              <p className="mt-2 text-lg font-semibold">{analysis.riskLevel} risk</p>
-              <p className="mt-4 text-sm leading-6 opacity-70">{analysis.summary}</p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <MiniStat label="Attack type" value={analysis.attackType} />
-              <MiniStat label="Confidence" value={analysis.confidence} />
-              <MiniStat label="Red flags" value={String(analysis.redFlags.length)} />
-            </div>
+          <div className="grid gap-5 lg:grid-cols-3">
+            <CompactPanel
+              icon={<Siren className="h-5 w-5 text-red-300" />}
+              title="Red flags"
+              items={analysis.redFlags}
+              empty="No strong red flags detected."
+              tone="red"
+            />
+            <CompactPanel
+              icon={<BellRing className="h-5 w-5 text-amber-300" />}
+              title="Tactics"
+              items={analysis.tactics}
+              empty="No manipulation tactics detected."
+              tone="amber"
+            />
+            <SafeReplyCard analysis={analysis} familyMode={familyMode} />
           </div>
         </section>
 
-        <section className="mb-8 rounded-[2rem] border border-cyan-300/15 bg-black/35 p-5 backdrop-blur-xl">
-          <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <section className="mb-6 rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">
                 Demo cases
               </p>
-              <h2 className="mt-1 text-2xl font-bold text-white">
-                Choose a suspicious call or message
+              <h2 className="mt-1 text-2xl font-black text-white">
+                Try realistic scam scenarios
               </h2>
             </div>
-
             <p className="text-sm text-white/45">
-              {demoCases.length} realistic scenarios
+              {demoCases.length} ready-to-test examples
             </p>
           </div>
 
@@ -279,147 +266,27 @@ export default function Home() {
                 className={`rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 ${
                   selectedDemoId === demo.id
                     ? "border-cyan-300/60 bg-cyan-300/10 shadow-[0_0_30px_rgba(103,232,249,0.16)]"
-                    : "border-white/10 bg-white/[0.03] hover:border-cyan-300/30"
+                    : "border-white/10 bg-black/25 hover:border-cyan-300/30"
                 }`}
               >
-                <p className="text-sm font-bold text-white">{demo.title}</p>
+                <p className="font-bold text-white">{demo.title}</p>
                 <p className="mt-1 text-sm text-white/45">{demo.subtitle}</p>
               </button>
             ))}
           </div>
         </section>
 
-        <section className="mb-8 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] border border-cyan-300/15 bg-black/35 p-5 backdrop-blur-xl">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">
-                  Input
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-white">
-                  Analyze a message, transcript, or audio
-                </h2>
-              </div>
-
-              <label className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-100">
-                <Users className="h-4 w-4" />
-                Family Mode
-                <input
-                  type="checkbox"
-                  checked={familyMode}
-                  onChange={(event) => setFamilyMode(event.target.checked)}
-                  className="accent-amber-300"
-                />
-              </label>
-            </div>
-
-            <div className="mb-4 grid gap-3 sm:grid-cols-3">
-              <ModeButton
-                active={mode === "message"}
-                icon={<MessageSquareText className="h-4 w-4" />}
-                label="Message"
-                onClick={() => setMode("message")}
-              />
-              <ModeButton
-                active={mode === "transcript"}
-                icon={<Mic className="h-4 w-4" />}
-                label="Call Transcript"
-                onClick={() => setMode("transcript")}
-              />
-              <ModeButton
-                active={mode === "audio"}
-                icon={<AudioLines className="h-4 w-4" />}
-                label="Audio Upload"
-                onClick={() => setMode("audio")}
-              />
-            </div>
-
-            {mode === "audio" && (
-              <div className="mb-4 rounded-3xl border border-cyan-300/15 bg-cyan-300/10 p-4">
-                <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-cyan-300/30 bg-black/25 p-6 text-center transition hover:border-cyan-300/60">
-                  <Upload className="mb-3 h-6 w-6 text-cyan-200" />
-                  <p className="font-semibold text-white">
-                    Upload a call recording
-                  </p>
-                  <p className="mt-1 text-sm text-white/45">
-                    MVP demo uses simulated transcription after upload.
-                  </p>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    className="hidden"
-                    onChange={(event) =>
-                      handleAudioUpload(event.target.files?.[0] || null)
-                    }
-                  />
-                </label>
-
-                {audioFileName && (
-                  <p className="mt-3 flex items-center gap-2 text-sm text-cyan-100">
-                    <FileAudio className="h-4 w-4" />
-                    Uploaded: {audioFileName}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <textarea
-              value={input}
-              onChange={(event) => {
-                setInput(event.target.value);
-                setHasAnalyzed(false);
-              }}
-              rows={14}
-              className="w-full resize-none rounded-3xl border border-white/10 bg-black/45 p-5 font-mono text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
-              placeholder="Paste a suspicious message or call transcript here..."
-            />
-
-            <div className="mt-4 flex flex-wrap gap-3">
-              <button
-                onClick={runAnalysis}
-                disabled={isAnalyzing}
-                className="rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-white disabled:opacity-60"
-              >
-                {isAnalyzing ? "Analyzing..." : "Analyze content"}
-              </button>
-
-              <button
-                onClick={() => {
-                  setInput("");
-                  setAudioFileName(null);
-                  setHasAnalyzed(false);
-                }}
-                className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-bold text-white transition hover:border-red-300/30"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <RiskPanel analysis={analysis} isAnalyzing={isAnalyzing} />
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <RedFlagsPanel analysis={analysis} />
-              <TacticsPanel analysis={analysis} />
-            </div>
-          </div>
-        </section>
-
-        <section className="mb-8 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <section className="mb-6 grid gap-5 xl:grid-cols-[1fr_1fr]">
           <EvidencePanel analysis={analysis} />
-
-          <SafeActionPanel
+          <NextStepsPanel
             analysis={analysis}
-            familyMode={familyMode}
-            hasAnalyzed={hasAnalyzed}
             input={input}
             mode={mode}
-            onExport={() => downloadReport({ input, mode, analysis })}
+            hasAnalyzed={hasAnalyzed}
           />
         </section>
 
-        <section className="mb-8 grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <section className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
           <HistoryPanel history={history} onClear={() => setHistory([])} />
           <EducationPanel />
         </section>
@@ -428,12 +295,185 @@ export default function Home() {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function HeroCard({
+  analysis,
+  onDemo,
+}: {
+  analysis: ScamAnalysis;
+  onDemo: () => void;
+}) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/35 p-4">
-      <p className="text-xs uppercase tracking-[0.18em] text-white/35">{label}</p>
-      <p className="mt-2 text-sm font-bold text-white">{value}</p>
+    <section className="rounded-[2rem] border border-white/10 glass p-6 backdrop-blur-xl">
+      <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-bold text-cyan-100">
+        <Radar className="h-4 w-4" />
+        Real-time fraud risk check
+      </div>
+
+      <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
+        Know before you <span className="text-cyan-300">respond.</span>
+      </h1>
+
+      <p className="mt-4 text-sm leading-6 text-white/55 md:text-base">
+        CallProof checks suspicious calls, messages, and uploaded audio for scam
+        probability, manipulation tactics, red flags, and safe next steps.
+      </p>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <HeroMini label="Current risk" value={analysis.riskLevel} />
+        <HeroMini label="Probability" value={`${analysis.scamProbability}%`} />
+        <HeroMini label="Type" value={analysis.attackType} />
+      </div>
+
+      <button
+        onClick={onDemo}
+        className="mt-6 w-full rounded-full border border-cyan-300/20 bg-cyan-300/10 px-5 py-3 text-sm font-black text-cyan-100 transition hover:bg-cyan-300 hover:text-slate-950"
+      >
+        Load fake bank call demo
+      </button>
+    </section>
+  );
+}
+
+function HeroMini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-black/25 p-3">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-sm font-black text-white">{value}</p>
     </div>
+  );
+}
+
+function TopAnalyzer({
+  mode,
+  setMode,
+  input,
+  setInput,
+  familyMode,
+  setFamilyMode,
+  isAnalyzing,
+  onAnalyze,
+  onAudioUpload,
+  audioFileName,
+}: {
+  mode: InputMode;
+  setMode: (mode: InputMode) => void;
+  input: string;
+  setInput: (value: string) => void;
+  familyMode: boolean;
+  setFamilyMode: (value: boolean) => void;
+  isAnalyzing: boolean;
+  onAnalyze: () => void;
+  onAudioUpload: (file: File | null) => void;
+  audioFileName: string | null;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-cyan-300/15 bg-slate-950/70 p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">
+            Analyze now
+          </p>
+          <h2 className="mt-1 text-2xl font-black text-white">
+            Paste, type, or upload suspicious content
+          </h2>
+        </div>
+
+        <label className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100">
+          <Users className="h-4 w-4" />
+          Family Mode
+          <input
+            type="checkbox"
+            checked={familyMode}
+            onChange={(event) => setFamilyMode(event.target.checked)}
+            className="accent-amber-300"
+          />
+        </label>
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <ModeButton
+          active={mode === "message"}
+          icon={<MessageSquareText className="h-4 w-4" />}
+          label="Message"
+          onClick={() => setMode("message")}
+        />
+        <ModeButton
+          active={mode === "transcript"}
+          icon={<Mic className="h-4 w-4" />}
+          label="Call transcript"
+          onClick={() => setMode("transcript")}
+        />
+        <ModeButton
+          active={mode === "audio"}
+          icon={<AudioLines className="h-4 w-4" />}
+          label="Audio upload"
+          onClick={() => setMode("audio")}
+        />
+      </div>
+
+      {mode === "audio" && (
+        <div className="mb-4 rounded-3xl border border-dashed border-cyan-300/30 bg-cyan-300/10 p-4">
+          <label className="flex cursor-pointer items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950">
+                <Upload className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-white">Upload call recording</p>
+                <p className="text-sm text-white/45">
+                  MVP simulates transcription after upload.
+                </p>
+              </div>
+            </div>
+            <input
+              type="file"
+              accept="audio/*"
+              className="hidden"
+              onChange={(event) =>
+                onAudioUpload(event.target.files?.[0] || null)
+              }
+            />
+            <span className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-950">
+              Choose file
+            </span>
+          </label>
+
+          {audioFileName && (
+            <p className="mt-3 flex items-center gap-2 text-sm text-cyan-100">
+              <FileAudio className="h-4 w-4" />
+              Uploaded: {audioFileName}
+            </p>
+          )}
+        </div>
+      )}
+
+      <textarea
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        rows={10}
+        className="w-full resize-none rounded-3xl border border-white/10 bg-black/45 p-5 font-mono text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+        placeholder="Paste a suspicious message, call transcript, or uploaded audio transcript here..."
+      />
+
+      <div className="mt-4 flex flex-wrap gap-3">
+        <button
+          onClick={onAnalyze}
+          disabled={isAnalyzing}
+          className="rounded-full bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 transition hover:bg-white disabled:opacity-60"
+        >
+          {isAnalyzing ? "Analyzing scam risk..." : "Analyze content"}
+        </button>
+
+        <button
+          onClick={() => setInput("")}
+          className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-black text-white transition hover:border-red-300/30"
+        >
+          Clear
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -451,7 +491,7 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition ${
         active
           ? "border-cyan-300/50 bg-cyan-300/15 text-cyan-100"
           : "border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/30"
@@ -463,7 +503,7 @@ function ModeButton({
   );
 }
 
-function RiskPanel({
+function ScoreCard({
   analysis,
   isAnalyzing,
 }: {
@@ -471,199 +511,196 @@ function RiskPanel({
   isAnalyzing: boolean;
 }) {
   return (
-    <div className="rounded-[2rem] border border-cyan-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <div className="mb-5 flex items-start justify-between gap-4">
+    <section
+      className={`rounded-[2rem] border p-6 backdrop-blur-xl ${getRiskStyle(
+        analysis.riskLevel
+      )}`}
+    >
+      <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="flex items-center gap-2 text-2xl font-bold text-white">
-            <ShieldAlert className="h-6 w-6 text-cyan-200" />
-            Scam Risk Analysis
-          </h2>
-          <p className="mt-1 text-sm text-white/45">
-            Probability score, attack classification, and explanation.
+          <p className="text-xs uppercase tracking-[0.24em] opacity-70">
+            Scam probability
+          </p>
+          <p className="mt-2 text-7xl font-black">
+            {isAnalyzing ? "..." : `${analysis.scamProbability}%`}
           </p>
         </div>
-
-        <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getRiskColor(analysis.riskLevel)}`}>
-          {analysis.riskLevel}
-        </span>
+        <ShieldAlert className="h-8 w-8 opacity-80" />
       </div>
 
-      <div className="mb-5">
-        <div className="mb-2 flex items-center justify-between text-sm text-white/55">
-          <span>Scam probability</span>
-          <span>{analysis.scamProbability}%</span>
-        </div>
-        <div className="h-3 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-cyan-300 transition-all duration-700"
-            style={{ width: `${analysis.scamProbability}%` }}
-          />
-        </div>
+      <div className="mb-4 h-3 overflow-hidden rounded-full bg-white/15">
+        <div
+          className="h-full rounded-full bg-white transition-all duration-700"
+          style={{ width: `${analysis.scamProbability}%` }}
+        />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-            Attack type
-          </p>
-          <p className="mt-2 text-lg font-bold text-white">{analysis.attackType}</p>
-        </div>
-
-        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-          <p className="text-xs uppercase tracking-[0.18em] text-white/40">
-            Confidence
-          </p>
-          <p className="mt-2 text-lg font-bold text-white">
-            {isAnalyzing ? "Scanning..." : analysis.confidence}
-          </p>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ScoreMeta label="Risk level" value={analysis.riskLevel} />
+        <ScoreMeta label="Confidence" value={analysis.confidence} />
+        <ScoreMeta label="Attack type" value={analysis.attackType} wide />
       </div>
 
-      <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="mb-2 text-xs uppercase tracking-[0.18em] text-cyan-200">
-          Explanation
-        </p>
-        <p className="text-sm leading-6 text-white/65">{analysis.summary}</p>
-      </div>
+      <p className="mt-4 text-sm leading-6 opacity-75">{analysis.summary}</p>
+    </section>
+  );
+}
+
+function ScoreMeta({
+  label,
+  value,
+  wide,
+}: {
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-white/10 bg-black/20 p-3 ${
+        wide ? "sm:col-span-2" : ""
+      }`}
+    >
+      <p className="text-[10px] uppercase tracking-[0.18em] opacity-50">
+        {label}
+      </p>
+      <p className="mt-1 font-black">{value}</p>
     </div>
   );
 }
 
-function RedFlagsPanel({ analysis }: { analysis: ScamAnalysis }) {
+function CompactPanel({
+  icon,
+  title,
+  items,
+  empty,
+  tone,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  items: string[];
+  empty: string;
+  tone: "red" | "amber";
+}) {
+  const toneClass =
+    tone === "red"
+      ? "border-red-300/15 bg-red-300/10 text-red-100"
+      : "border-amber-300/15 bg-amber-300/10 text-amber-100";
+
   return (
-    <div className="rounded-[2rem] border border-red-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-white">
-        <Siren className="h-5 w-5 text-red-300" />
-        Red Flags
+    <section className="rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-white">
+        {icon}
+        {title}
       </h3>
 
-      <div className="space-y-3">
-        {analysis.redFlags.length ? (
-          analysis.redFlags.map((flag) => (
-            <div key={flag} className="rounded-2xl border border-red-300/15 bg-red-300/10 p-3 text-sm text-red-100">
-              {flag}
+      <div className="space-y-2">
+        {items.length ? (
+          items.slice(0, 5).map((item) => (
+            <div key={item} className={`rounded-2xl border p-3 text-sm ${toneClass}`}>
+              {item}
             </div>
           ))
         ) : (
-          <p className="text-sm text-white/45">No strong red flags detected.</p>
+          <p className="text-sm text-white/45">{empty}</p>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
-function TacticsPanel({ analysis }: { analysis: ScamAnalysis }) {
+function SafeReplyCard({
+  analysis,
+  familyMode,
+}: {
+  analysis: ScamAnalysis;
+  familyMode: boolean;
+}) {
   return (
-    <div className="rounded-[2rem] border border-amber-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-xl font-bold text-white">
-        <BellRing className="h-5 w-5 text-amber-300" />
-        Manipulation Tactics
+    <section className="rounded-[2rem] border border-emerald-300/15 bg-emerald-300/10 p-5 backdrop-blur-xl">
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-white">
+        <ShieldCheck className="h-5 w-5 text-emerald-300" />
+        Safe action
       </h3>
 
-      <div className="flex flex-wrap gap-2">
-        {analysis.tactics.length ? (
-          analysis.tactics.map((tactic) => (
-            <span
-              key={tactic}
-              className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100"
-            >
-              {tactic}
-            </span>
-          ))
-        ) : (
-          <p className="text-sm text-white/45">No manipulation tactics detected.</p>
-        )}
-      </div>
-    </div>
+      <p className="text-sm leading-6 text-white/70">{analysis.safeReply}</p>
+
+      {familyMode && (
+        <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-3">
+          <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+            Family Mode
+          </p>
+          <p className="text-sm leading-6 text-white/70">
+            {analysis.familyModeAdvice}
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
 function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
   return (
-    <div className="rounded-[2rem] border border-cyan-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-bold text-white">
+    <section className="rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
         <ClipboardCheck className="h-6 w-6 text-cyan-200" />
-        Evidence Highlights
+        Evidence highlights
       </h3>
 
       <div className="space-y-3">
         {analysis.evidence.length ? (
           analysis.evidence.map((item, index) => (
-            <div key={`${item.text}-${index}`} className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+            <div
+              key={`${item.text}-${index}`}
+              className="rounded-3xl border border-white/10 bg-black/25 p-4"
+            >
               <p className="font-mono text-sm text-cyan-100">“{item.text}”</p>
-              <p className="mt-2 text-sm leading-6 text-white/50">{item.reason}</p>
+              <p className="mt-2 text-sm leading-6 text-white/50">
+                {item.reason}
+              </p>
             </div>
           ))
         ) : (
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/45">
+          <p className="rounded-3xl border border-white/10 bg-black/25 p-4 text-sm text-white/45">
             No suspicious evidence highlighted yet.
-          </div>
+          </p>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
-function SafeActionPanel({
+function NextStepsPanel({
   analysis,
-  familyMode,
-  hasAnalyzed,
   input,
   mode,
-  onExport,
+  hasAnalyzed,
 }: {
   analysis: ScamAnalysis;
-  familyMode: boolean;
-  hasAnalyzed: boolean;
   input: string;
   mode: InputMode;
-  onExport: () => void;
+  hasAnalyzed: boolean;
 }) {
   return (
-    <div className="rounded-[2rem] border border-emerald-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-bold text-white">
-        <ShieldCheck className="h-6 w-6 text-emerald-300" />
-        Safe Next Action
+    <section className="rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
+        <CheckCircle2 className="h-6 w-6 text-emerald-300" />
+        What to do now
       </h3>
 
-      <div className="mb-4 rounded-3xl border border-emerald-300/20 bg-emerald-300/10 p-4">
-        <p className="mb-2 text-xs uppercase tracking-[0.2em] text-emerald-200">
-          Recommended response
-        </p>
-        <p className="text-sm leading-6 text-white/75">{analysis.safeReply}</p>
-      </div>
-
-      {familyMode && (
-        <div className="mb-4 rounded-3xl border border-amber-300/20 bg-amber-300/10 p-4">
-          <p className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-100">
-            <Users className="h-4 w-4" />
-            Family Mode Advice
-          </p>
-          <p className="text-sm leading-6 text-white/75">
-            {analysis.familyModeAdvice}
-          </p>
-        </div>
-      )}
-
-      <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.03] p-4">
-        <p className="mb-3 text-xs uppercase tracking-[0.2em] text-cyan-200">
-          What to do now
-        </p>
-
-        <div className="space-y-2">
-          {analysis.nextSteps.map((step) => (
-            <div key={step} className="flex gap-2 text-sm text-white/65">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-              <span>{step}</span>
-            </div>
-          ))}
-        </div>
+      <div className="space-y-3">
+        {analysis.nextSteps.map((step) => (
+          <div key={step} className="flex gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/65">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+            <span>{step}</span>
+          </div>
+        ))}
       </div>
 
       <button
-        onClick={onExport}
+        onClick={() => downloadReport({ input, mode, analysis })}
         disabled={!input.trim()}
-        className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-white disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-white disabled:opacity-50"
       >
         <Download className="h-4 w-4" />
         Export safety report
@@ -674,7 +711,7 @@ function SafeActionPanel({
           Run analysis to save this scan into history.
         </p>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -686,11 +723,11 @@ function HistoryPanel({
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-[2rem] border border-cyan-300/15 bg-black/35 p-5 backdrop-blur-xl">
+    <section className="rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-2xl font-bold text-white">
+        <h3 className="flex items-center gap-2 text-2xl font-black text-white">
           <History className="h-6 w-6 text-cyan-200" />
-          Scan History
+          Scan history
         </h3>
 
         <button onClick={onClear} className="text-sm text-white/40 hover:text-white">
@@ -701,37 +738,44 @@ function HistoryPanel({
       <div className="space-y-3">
         {history.length ? (
           history.map((item) => (
-            <div key={item.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+            <div
+              key={item.id}
+              className="rounded-3xl border border-white/10 bg-black/25 p-4"
+            >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-bold text-white">{item.attackType}</p>
+                  <p className="font-black text-white">{item.attackType}</p>
                   <p className="mt-1 text-xs text-white/40">
                     {new Date(item.createdAt).toLocaleString()} • {item.mode}
                   </p>
                 </div>
 
-                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${getRiskColor(item.riskLevel)}`}>
+                <span
+                  className={`rounded-full border px-3 py-1 text-xs font-black ${getRiskStyle(
+                    item.riskLevel
+                  )}`}
+                >
                   {item.score}%
                 </span>
               </div>
             </div>
           ))
         ) : (
-          <p className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/45">
+          <p className="rounded-3xl border border-white/10 bg-black/25 p-4 text-sm text-white/45">
             No scans yet. Run your first analysis.
           </p>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
 function EducationPanel() {
   return (
-    <div className="rounded-[2rem] border border-amber-300/15 bg-black/35 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-bold text-white">
+    <section className="rounded-[2rem] border border-white/10 glass p-5 backdrop-blur-xl">
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
         <Sparkles className="h-6 w-6 text-amber-300" />
-        Why this matters
+        Scam education
       </h3>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -743,20 +787,20 @@ function EducationPanel() {
         <EducationCard
           icon={<Ban className="h-5 w-5" />}
           title="Codes should never be shared"
-          text="A bank, courier, or official organization will not ask you to read a one-time code over the phone."
+          text="A real bank or company will not ask you to read a one-time code over the phone."
         />
         <EducationCard
           icon={<ShieldCheck className="h-5 w-5" />}
           title="Verify through official channels"
-          text="Hang up, close the message, and contact the organization using its official website or phone number."
+          text="Hang up and contact the organization using its official website or phone number."
         />
         <EducationCard
           icon={<Users className="h-5 w-5" />}
           title="Protect family members"
-          text="Family Mode explains risks in simpler language for people who may be less comfortable with technology."
+          text="Family Mode explains risk in simpler language for people who may be less comfortable with technology."
         />
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -770,11 +814,11 @@ function EducationCard({
   text: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
+    <div className="rounded-3xl border border-white/10 bg-black/25 p-4">
       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-300/10 text-amber-200">
         {icon}
       </div>
-      <p className="font-bold text-white">{title}</p>
+      <p className="font-black text-white">{title}</p>
       <p className="mt-2 text-sm leading-6 text-white/50">{text}</p>
     </div>
   );

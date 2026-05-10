@@ -10,22 +10,24 @@ body {
   color: var(--foreground);
 }
 
-.cyber-grid {
+.grid-bg {
   background-image:
-    linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(125, 211, 252, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(125, 211, 252, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
-.radial-glow {
+.soft-glow {
   background:
-    radial-gradient(circle at 20% 10%, rgba(14, 165, 233, 0.24), transparent 28%),
-    radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.14), transparent 26%),
-    radial-gradient(circle at 50% 95%, rgba(16, 185, 129, 0.14), transparent 30%);
+    radial-gradient(circle at 10% 8%, rgba(34, 211, 238, 0.28), transparent 30%),
+    radial-gradient(circle at 90% 20%, rgba(251, 191, 36, 0.14), transparent 27%),
+    radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.13), transparent 32%);
 }
 
-.noise {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-  background-size: 4px 4px;
-  opacity: 0.16;
+.glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.025)
+  );
 }

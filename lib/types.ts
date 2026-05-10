@@ -2,6 +2,8 @@ export type InputMode = "message" | "transcript" | "audio";
 
 export type RiskLevel = "Low" | "Medium" | "High" | "Critical";
 
+export type Confidence = "Low" | "Medium" | "High";
+
 export type AttackType =
   | "Bank impersonation"
   | "OTP theft"
@@ -36,6 +38,7 @@ export type DemoCase = {
   subtitle: string;
   mode: InputMode;
   content: string;
+  expectedType: AttackType;
 };
 
 export type EvidenceItem = {
@@ -46,7 +49,7 @@ export type EvidenceItem = {
 export type ScamAnalysis = {
   scamProbability: number;
   riskLevel: RiskLevel;
-  confidence: "Low" | "Medium" | "High";
+  confidence: Confidence;
   attackType: AttackType;
   summary: string;
   redFlags: string[];
@@ -61,7 +64,6 @@ export type ScanHistoryItem = {
   id: string;
   createdAt: string;
   mode: InputMode;
-  title: string;
   score: number;
   riskLevel: RiskLevel;
   attackType: AttackType;
