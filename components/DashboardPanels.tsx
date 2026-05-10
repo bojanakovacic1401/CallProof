@@ -33,7 +33,7 @@ export function RiskScoreCard({ analysis }: { analysis: ScamAnalysis }) {
   const danger = analysis.scamProbability >= 80;
 
   return (
-    <Card className="h-full">
+  <Card className="h-full">
       <p className="text-sm font-medium text-[var(--fg)]">Risk Score</p>
 
       <div className="mt-3 flex items-center gap-4">
@@ -88,7 +88,7 @@ export function MetricCard({
   chart: "bars" | "none";
 }) {
   return (
-    <Card>
+    <Card className="h-full">
       <p className="text-sm font-medium text-[var(--fg)]">{title}</p>
 
       <div className="mt-5 flex items-end justify-between gap-4">
@@ -117,7 +117,7 @@ export function MetricCard({
 
 export function ProtectionLevelCard() {
   return (
-    <Card>
+  <Card className="h-full">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-[var(--fg)]">
