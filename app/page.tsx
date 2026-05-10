@@ -15,7 +15,6 @@ import {
   Download,
   FileAudio,
   FileText,
-  Fingerprint,
   Globe,
   History,
   LayoutDashboard,
@@ -90,29 +89,27 @@ type AnalysisStage =
   | "error";
 
 type ThemeMode = "dark" | "light";
-
 type ThemeStyle = CSSProperties & Record<`--${string}`, string>;
 
 function getThemeStyle(theme: ThemeMode): ThemeStyle {
   if (theme === "light") {
-  return {
-    "--bg": "#f3f7fb",
-    "--panel": "rgba(255,255,255,0.88)",
-    "--panel-strong": "rgba(255,255,255,0.97)",
-    "--sidebar": "rgba(248,252,255,0.96)",
-    "--input": "rgba(255,255,255,0.94)",
-    "--fg": "#07111f",
-    "--muted": "rgba(15,23,42,0.68)",
-    "--muted2": "rgba(15,23,42,0.48)",
-    "--line": "rgba(15,23,42,0.16)",
-    "--cyan": "#0284c7",
-    "--red": "#dc2626",
-    "--green": "#059669",
-    "--shadow": "rgba(15,23,42,0.12)",
-    "--grid": "rgba(2,132,199,0.09)",
-      };
-    }
-  
+    return {
+      "--bg": "#eef5fb",
+      "--panel": "rgba(255,255,255,0.94)",
+      "--panel-strong": "rgba(255,255,255,0.98)",
+      "--sidebar": "rgba(246,251,255,0.98)",
+      "--input": "rgba(255,255,255,0.98)",
+      "--fg": "#07111f",
+      "--muted": "rgba(15,23,42,0.72)",
+      "--muted2": "rgba(15,23,42,0.52)",
+      "--line": "rgba(15,23,42,0.16)",
+      "--cyan": "#0284c7",
+      "--red": "#dc2626",
+      "--green": "#059669",
+      "--shadow": "rgba(15,23,42,0.13)",
+      "--grid": "rgba(2,132,199,0.08)",
+    };
+  }
 
   return {
     "--bg": "#050914",
@@ -130,7 +127,6 @@ function getThemeStyle(theme: ThemeMode): ThemeStyle {
     "--shadow": "rgba(0,0,0,0.28)",
     "--grid": "rgba(34,211,238,0.052)",
   };
-
 }
 
 function getRiskStyle(risk: string) {
@@ -386,7 +382,7 @@ export default function Home() {
   return (
     <main
       style={getThemeStyle(theme)}
-      className="relative min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--fg)]"
+      className="relative min-h-screen overflow-x-hidden bg-[var(--bg)] text-[var(--fg)]"
     >
       <BackgroundEffects />
 
@@ -396,7 +392,7 @@ export default function Home() {
         <section className="flex min-w-0 flex-1 flex-col">
           <TopBar theme={theme} setTheme={setTheme} />
 
-          <div className="mx-auto w-full max-w-[1480px] px-5 py-5 lg:px-6">
+          <div className="w-full max-w-none px-4 py-5 sm:px-5 lg:px-6">
             <div id="dashboard" className="mb-4 scroll-mt-24">
               <p className="text-xs font-medium uppercase tracking-[0.42em] text-cyan-300">
                 Protection overview
@@ -413,24 +409,27 @@ export default function Home() {
               <RiskScoreCard analysis={analysis} />
               <MetricCard
                 title="Threats Blocked"
-                value={String(history.filter((item) => item.score >= 65).length || 1_247)}
+                value={String(history.filter((item) => item.score >= 65).length || 1247)}
                 detail="+18 this week"
                 tone="red"
                 chart="bars"
               />
               <div id="contacts" className="scroll-mt-24">
-  <MetricCard
-    title="Verified Contacts"
-    value="156"
-    detail="Trusted & verified contacts"
-    tone="cyan"
-    chart="none"
-  />
-</div>
+                <MetricCard
+                  title="Verified Contacts"
+                  value="156"
+                  detail="Trusted & verified contacts"
+                  tone="cyan"
+                  chart="none"
+                />
+              </div>
               <ProtectionLevelCard />
             </div>
 
-<div id="scanner" className="mb-5 grid scroll-mt-24 gap-4 xl:grid-cols-[1.1fr_0.75fr_1.15fr]">
+            <div
+              id="scanner"
+              className="mb-5 grid scroll-mt-24 items-stretch gap-4 xl:grid-cols-[1.1fr_0.8fr_1.1fr]"
+            >
               <AnalyzerPanel
                 mode={mode}
                 setMode={(nextMode) => {
@@ -456,7 +455,7 @@ export default function Home() {
                 audioFileName={audioFileName}
               />
 
-              <section id="alerts" className="scroll-mt-24">
+              <section id="alerts" className="h-full scroll-mt-24">
                 <RecentAlertsPanel />
               </section>
 
@@ -516,8 +515,8 @@ export default function Home() {
             <div id="history" className="grid scroll-mt-24 gap-4 xl:grid-cols-[0.85fr_1.15fr]">
               <HistoryPanel history={history} onClear={() => setHistory([])} />
               <section id="education" className="scroll-mt-24">
-  <EducationPanel />
-</section>
+                <EducationPanel />
+              </section>
             </div>
           </div>
         </section>
@@ -550,7 +549,7 @@ function Card({
     <section
       className={`rounded-[18px] border p-4 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl ${
         danger
-          ? "border-red-400/30 bg-[linear-gradient(135deg,rgba(127,29,29,0.72),var(--panel)),radial-gradient(circle_at_84%_25%,rgba(239,68,68,0.3),transparent_34%)]"
+          ? "border-red-400/35 bg-[linear-gradient(135deg,rgba(88,18,30,0.92),rgba(28,12,24,0.88)),radial-gradient(circle_at_84%_25%,rgba(239,68,68,0.34),transparent_34%)] text-white"
           : "border-[var(--line)] bg-[linear-gradient(135deg,var(--panel-strong),var(--panel)),radial-gradient(circle_at_top_right,rgba(34,211,238,0.055),transparent_34%)]"
       } ${className}`}
     >
@@ -570,53 +569,15 @@ function LogoMark() {
 
 function Sidebar() {
   const items = [
-    {
-      label: "Dashboard",
-      icon: <LayoutDashboard className="h-4 w-4" />,
-      active: true,
-      target: "dashboard",
-    },
-    {
-      label: "Alerts",
-      icon: <Bell className="h-4 w-4" />,
-      badge: "3",
-      target: "alerts",
-    },
-    {
-      label: "Call Protection",
-      icon: <Phone className="h-4 w-4" />,
-      target: "scanner",
-    },
-    {
-      label: "Message Protection",
-      icon: <MessageSquareText className="h-4 w-4" />,
-      target: "scanner",
-    },
-    {
-      label: "Audio Scanner",
-      icon: <AudioLines className="h-4 w-4" />,
-      target: "scanner",
-    },
-    {
-      label: "Trusted Contacts",
-      icon: <UserCheck className="h-4 w-4" />,
-      target: "contacts",
-    },
-    {
-      label: "Reports",
-      icon: <FileText className="h-4 w-4" />,
-      target: "reports",
-    },
-    {
-      label: "Privacy Center",
-      icon: <Lock className="h-4 w-4" />,
-      target: "education",
-    },
-    {
-      label: "Settings",
-      icon: <Settings className="h-4 w-4" />,
-      target: "dashboard",
-    },
+    { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, active: true, target: "dashboard" },
+    { label: "Alerts", icon: <Bell className="h-4 w-4" />, badge: "3", target: "alerts" },
+    { label: "Call Protection", icon: <Phone className="h-4 w-4" />, target: "scanner" },
+    { label: "Message Protection", icon: <MessageSquareText className="h-4 w-4" />, target: "scanner" },
+    { label: "Audio Scanner", icon: <AudioLines className="h-4 w-4" />, target: "scanner" },
+    { label: "Trusted Contacts", icon: <UserCheck className="h-4 w-4" />, target: "contacts" },
+    { label: "Reports", icon: <FileText className="h-4 w-4" />, target: "reports" },
+    { label: "Privacy Center", icon: <Lock className="h-4 w-4" />, target: "education" },
+    { label: "Settings", icon: <Settings className="h-4 w-4" />, target: "dashboard" },
   ];
 
   function scrollToSection(target: string) {
@@ -635,9 +596,7 @@ function Sidebar() {
           <p className="text-xl font-semibold tracking-tight text-[var(--fg)]">
             CallProof
           </p>
-          <p className="text-xs font-medium text-cyan-300">
-            Scan Protection
-          </p>
+          <p className="text-xs font-medium text-cyan-300">Scan Protection</p>
         </div>
       </div>
 
@@ -645,13 +604,13 @@ function Sidebar() {
         {items.map((item) => (
           <button
             key={item.label}
+            type="button"
             onClick={() => scrollToSection(item.target)}
             className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
               item.active
                 ? "bg-red-500/15 text-red-100 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.18)]"
                 : "text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--fg)]"
             }`}
-            type="button"
           >
             {item.icon}
             {item.label}
@@ -670,13 +629,10 @@ function Sidebar() {
           <ShieldCheck className="h-5 w-5" />
         </div>
 
-        <p className="text-sm font-semibold text-[var(--fg)]">
-          Stay one step ahead
-        </p>
+        <p className="text-sm font-semibold text-[var(--fg)]">Stay one step ahead</p>
 
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          CallProof checks suspicious calls, messages, and audio before you
-          respond.
+          CallProof checks suspicious calls, messages, and audio before you respond.
         </p>
 
         <button
@@ -722,8 +678,8 @@ function TopBar({
   setTheme: (theme: ThemeMode) => void;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--sidebar)] px-5 py-3.5 backdrop-blur-xl lg:px-6">
-      <div className="mx-auto flex w-full max-w-[1480px] items-center justify-between gap-4">
+    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--sidebar)]/95 px-5 py-3.5 backdrop-blur-xl lg:px-6">
+      <div className="flex w-full items-center justify-between gap-4">
         <div className="hidden min-w-[390px] items-center gap-3 rounded-xl border border-[var(--line)] bg-white/[0.05] px-4 py-2.5 text-[var(--muted)] md:flex">
           <Search className="h-4 w-4" />
           <span className="text-sm">Search numbers, messages, reports...</span>
@@ -737,6 +693,7 @@ function TopBar({
           </button>
 
           <button
+            type="button"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="flex h-10 items-center gap-2 rounded-xl border border-[var(--line)] bg-white/[0.05] px-3 text-sm font-medium text-[var(--fg)]"
           >
@@ -1088,7 +1045,7 @@ function LatestAnalysisPanel({
           : "Local Preview";
 
   return (
-    <Card danger={dangerous}>
+    <Card danger={dangerous} className="h-full">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-[0.34em] text-cyan-300">
@@ -1142,7 +1099,7 @@ function LatestAnalysisPanel({
           {(analysis.redFlags.length ? analysis.redFlags : ["No strong red flags detected"])
             .slice(0, 4)
             .map((flag) => (
-              <div key={flag} className="flex items-center gap-2 text-sm text-white/70">
+              <div key={flag} className="flex items-center gap-2 text-sm text-white/78">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
                 {flag}
               </div>
@@ -1156,7 +1113,7 @@ function LatestAnalysisPanel({
 function AnalysisMeta({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-white/42">
         {label}
       </p>
       <p className="mt-1 truncate text-sm font-medium text-white">{value}</p>
@@ -1208,7 +1165,7 @@ function RecentAlertsPanel() {
   ];
 
   return (
-    <Card danger>
+    <Card danger className="h-full">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
           <BadgeAlert className="h-5 w-5 text-red-300" />
@@ -1240,7 +1197,7 @@ function RecentAlertsPanel() {
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">{alert.title}</p>
-              <p className="mt-0.5 truncate text-xs text-white/45">{alert.detail}</p>
+              <p className="mt-0.5 truncate text-xs text-white/55">{alert.detail}</p>
             </div>
 
             <div className="text-right">
@@ -1253,7 +1210,7 @@ function RecentAlertsPanel() {
               >
                 {alert.severity}
               </span>
-              <p className="mt-1 text-[10px] text-white/35">{alert.time}</p>
+              <p className="mt-1 text-[10px] text-white/42">{alert.time}</p>
             </div>
           </div>
         ))}
@@ -1323,8 +1280,8 @@ function SignalPanel({
 }) {
   const toneClass =
     tone === "red"
-      ? "border-red-300/15 bg-red-300/10 text-red-100"
-      : "border-amber-300/15 bg-amber-300/10 text-amber-100";
+      ? "border-red-300/30 bg-red-500/10 text-[var(--fg)]"
+      : "border-amber-300/30 bg-amber-400/12 text-[var(--fg)]";
 
   return (
     <Card>
@@ -1361,7 +1318,7 @@ function SafeReplyPanel({
   hasAnalyzed: boolean;
 }) {
   return (
-    <section className="rounded-[18px] border border-emerald-300/15 bg-emerald-300/10 p-4 backdrop-blur-xl">
+    <section className="rounded-[18px] border border-emerald-300/25 bg-emerald-400/12 p-4 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl">
       <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--fg)]">
         <ShieldCheck className="h-5 w-5 text-emerald-300" />
         Safe action
@@ -1372,7 +1329,7 @@ function SafeReplyPanel({
       </p>
 
       {familyMode && (
-        <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
+        <div className="mt-4 rounded-xl border border-amber-300/35 bg-amber-300/15 p-3">
           <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-amber-200">
             Family Mode
           </p>
