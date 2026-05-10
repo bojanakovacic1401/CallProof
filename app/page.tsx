@@ -95,23 +95,24 @@ type ThemeStyle = CSSProperties & Record<`--${string}`, string>;
 
 function getThemeStyle(theme: ThemeMode): ThemeStyle {
   if (theme === "light") {
-    return {
-      "--bg": "#eef4fb",
-      "--panel": "rgba(255,255,255,0.78)",
-      "--panel-strong": "rgba(255,255,255,0.92)",
-      "--sidebar": "rgba(244,249,255,0.9)",
-      "--input": "rgba(255,255,255,0.8)",
-      "--fg": "#07111f",
-      "--muted": "rgba(15,23,42,0.58)",
-      "--muted2": "rgba(15,23,42,0.38)",
-      "--line": "rgba(15,23,42,0.12)",
-      "--cyan": "#0891b2",
-      "--red": "#e11d48",
-      "--green": "#059669",
-      "--shadow": "rgba(15,23,42,0.08)",
-      "--grid": "rgba(8,145,178,0.08)",
-    };
-  }
+  return {
+    "--bg": "#f3f7fb",
+    "--panel": "rgba(255,255,255,0.88)",
+    "--panel-strong": "rgba(255,255,255,0.97)",
+    "--sidebar": "rgba(248,252,255,0.96)",
+    "--input": "rgba(255,255,255,0.94)",
+    "--fg": "#07111f",
+    "--muted": "rgba(15,23,42,0.68)",
+    "--muted2": "rgba(15,23,42,0.48)",
+    "--line": "rgba(15,23,42,0.16)",
+    "--cyan": "#0284c7",
+    "--red": "#dc2626",
+    "--green": "#059669",
+    "--shadow": "rgba(15,23,42,0.12)",
+    "--grid": "rgba(2,132,199,0.09)",
+      };
+    }
+  
 
   return {
     "--bg": "#050914",
@@ -129,6 +130,7 @@ function getThemeStyle(theme: ThemeMode): ThemeStyle {
     "--shadow": "rgba(0,0,0,0.28)",
     "--grid": "rgba(34,211,238,0.052)",
   };
+
 }
 
 function getRiskStyle(risk: string) {
@@ -395,7 +397,7 @@ export default function Home() {
           <TopBar theme={theme} setTheme={setTheme} />
 
           <div className="mx-auto w-full max-w-[1480px] px-5 py-5 lg:px-6">
-            <div className="mb-4">
+            <div id="dashboard" className="mb-4 scroll-mt-24">
               <p className="text-xs font-medium uppercase tracking-[0.42em] text-cyan-300">
                 Protection overview
               </p>
@@ -416,17 +418,19 @@ export default function Home() {
                 tone="red"
                 chart="bars"
               />
-              <MetricCard
-                title="Verified Contacts"
-                value="156"
-                detail="Trusted & verified contacts"
-                tone="cyan"
-                chart="none"
-              />
+              <div id="contacts" className="scroll-mt-24">
+  <MetricCard
+    title="Verified Contacts"
+    value="156"
+    detail="Trusted & verified contacts"
+    tone="cyan"
+    chart="none"
+  />
+</div>
               <ProtectionLevelCard />
             </div>
 
-            <div className="mb-5 grid gap-4 xl:grid-cols-[1.1fr_0.75fr_1.15fr]">
+<div id="scanner" className="mb-5 grid scroll-mt-24 gap-4 xl:grid-cols-[1.1fr_0.75fr_1.15fr]">
               <AnalyzerPanel
                 mode={mode}
                 setMode={(nextMode) => {
@@ -452,7 +456,9 @@ export default function Home() {
                 audioFileName={audioFileName}
               />
 
-              <RecentAlertsPanel />
+              <section id="alerts" className="scroll-mt-24">
+                <RecentAlertsPanel />
+              </section>
 
               <LatestAnalysisPanel
                 analysis={analysis}
@@ -497,7 +503,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mb-5 grid gap-4 xl:grid-cols-[1fr_1fr]">
+            <div id="reports" className="mb-5 grid scroll-mt-24 gap-4 xl:grid-cols-[1fr_1fr]">
               <EvidencePanel analysis={analysis} />
               <NextStepsPanel
                 analysis={analysis}
@@ -507,9 +513,11 @@ export default function Home() {
               />
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+            <div id="history" className="grid scroll-mt-24 gap-4 xl:grid-cols-[0.85fr_1.15fr]">
               <HistoryPanel history={history} onClear={() => setHistory([])} />
-              <EducationPanel />
+              <section id="education" className="scroll-mt-24">
+  <EducationPanel />
+</section>
             </div>
           </div>
         </section>
@@ -542,7 +550,7 @@ function Card({
     <section
       className={`rounded-[18px] border p-4 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl ${
         danger
-          ? "border-red-400/25 bg-[linear-gradient(135deg,rgba(60,12,20,0.9),var(--panel)),radial-gradient(circle_at_84%_25%,rgba(239,68,68,0.25),transparent_34%)]"
+          ? "border-red-400/30 bg-[linear-gradient(135deg,rgba(127,29,29,0.72),var(--panel)),radial-gradient(circle_at_84%_25%,rgba(239,68,68,0.3),transparent_34%)]"
           : "border-[var(--line)] bg-[linear-gradient(135deg,var(--panel-strong),var(--panel)),radial-gradient(circle_at_top_right,rgba(34,211,238,0.055),transparent_34%)]"
       } ${className}`}
     >
@@ -562,16 +570,61 @@ function LogoMark() {
 
 function Sidebar() {
   const items = [
-    { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, active: true },
-    { label: "Alerts", icon: <Bell className="h-4 w-4" />, badge: "3" },
-    { label: "Call Protection", icon: <Phone className="h-4 w-4" /> },
-    { label: "Message Protection", icon: <MessageSquareText className="h-4 w-4" /> },
-    { label: "Audio Scanner", icon: <AudioLines className="h-4 w-4" /> },
-    { label: "Trusted Contacts", icon: <UserCheck className="h-4 w-4" /> },
-    { label: "Reports", icon: <FileText className="h-4 w-4" /> },
-    { label: "Privacy Center", icon: <Lock className="h-4 w-4" /> },
-    { label: "Settings", icon: <Settings className="h-4 w-4" /> },
+    {
+      label: "Dashboard",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      active: true,
+      target: "dashboard",
+    },
+    {
+      label: "Alerts",
+      icon: <Bell className="h-4 w-4" />,
+      badge: "3",
+      target: "alerts",
+    },
+    {
+      label: "Call Protection",
+      icon: <Phone className="h-4 w-4" />,
+      target: "scanner",
+    },
+    {
+      label: "Message Protection",
+      icon: <MessageSquareText className="h-4 w-4" />,
+      target: "scanner",
+    },
+    {
+      label: "Audio Scanner",
+      icon: <AudioLines className="h-4 w-4" />,
+      target: "scanner",
+    },
+    {
+      label: "Trusted Contacts",
+      icon: <UserCheck className="h-4 w-4" />,
+      target: "contacts",
+    },
+    {
+      label: "Reports",
+      icon: <FileText className="h-4 w-4" />,
+      target: "reports",
+    },
+    {
+      label: "Privacy Center",
+      icon: <Lock className="h-4 w-4" />,
+      target: "education",
+    },
+    {
+      label: "Settings",
+      icon: <Settings className="h-4 w-4" />,
+      target: "dashboard",
+    },
   ];
+
+  function scrollToSection(target: string) {
+    document.getElementById(target)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
 
   return (
     <aside className="hidden w-[258px] shrink-0 border-r border-[var(--line)] bg-[var(--sidebar)] p-4 backdrop-blur-xl lg:block">
@@ -582,7 +635,9 @@ function Sidebar() {
           <p className="text-xl font-semibold tracking-tight text-[var(--fg)]">
             CallProof
           </p>
-          <p className="text-xs font-medium text-cyan-300">Scan Protection</p>
+          <p className="text-xs font-medium text-cyan-300">
+            Scan Protection
+          </p>
         </div>
       </div>
 
@@ -590,11 +645,13 @@ function Sidebar() {
         {items.map((item) => (
           <button
             key={item.label}
+            onClick={() => scrollToSection(item.target)}
             className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
               item.active
                 ? "bg-red-500/15 text-red-100 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.18)]"
                 : "text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--fg)]"
             }`}
+            type="button"
           >
             {item.icon}
             {item.label}
@@ -613,13 +670,20 @@ function Sidebar() {
           <ShieldCheck className="h-5 w-5" />
         </div>
 
-        <p className="text-sm font-semibold text-[var(--fg)]">Stay one step ahead</p>
-
-        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          CallProof checks suspicious calls, messages, and audio before you respond.
+        <p className="text-sm font-semibold text-[var(--fg)]">
+          Stay one step ahead
         </p>
 
-        <button className="mt-4 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-medium text-cyan-200">
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          CallProof checks suspicious calls, messages, and audio before you
+          respond.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => scrollToSection("scanner")}
+          className="mt-4 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-medium text-cyan-200 transition hover:bg-cyan-300/15"
+        >
           Protection active
         </button>
       </div>
