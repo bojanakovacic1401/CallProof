@@ -396,7 +396,7 @@ export default function Home() {
                 chart="bars"
               />
 
-              <div id="contacts" className="scroll-mt-24">
+              <div id="contacts" className="h-full scroll-mt-24">
                 <MetricCard
                   title="Verified Contacts"
                   value="156"

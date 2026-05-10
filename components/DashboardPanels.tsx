@@ -33,7 +33,7 @@ export function RiskScoreCard({ analysis }: { analysis: ScamAnalysis }) {
   const danger = analysis.scamProbability >= 80;
 
   return (
-    <Card>
+    <Card className="h-full">
       <p className="text-sm font-medium text-[var(--fg)]">Risk Score</p>
 
       <div className="mt-3 flex items-center gap-4">
