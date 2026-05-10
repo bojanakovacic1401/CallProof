@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import {
   AlertTriangle,
   AudioLines,
@@ -22,16 +22,16 @@ import {
   Lock,
   MessageSquareText,
   Mic,
+  Moon,
   Phone,
   Radar,
   Search,
   Settings,
-  Shield,
-  ShieldAlert,
   ShieldCheck,
   Siren,
   Skull,
   Sparkles,
+  Sun,
   Upload,
   UserCheck,
   Users,
@@ -64,6 +64,75 @@ type AnalyzeApiResponse =
       ok: false;
       error: string;
     };
+
+type TranscribeApiResponse =
+  | {
+      ok: true;
+      transcript: string;
+      model: string;
+      fileName: string;
+      fileSize: number;
+      timestamp: string;
+    }
+  | {
+      ok: false;
+      error: string;
+      details?: string;
+    };
+
+type AnalysisStage =
+  | "idle"
+  | "transcribing"
+  | "transcribed"
+  | "analyzing"
+  | "ready"
+  | "error";
+
+type ThemeMode = "dark" | "light";
+
+type ThemeStyle = CSSProperties & Record<`--${string}`, string>;
+
+function getThemeStyle(theme: ThemeMode): ThemeStyle {
+  if (theme === "light") {
+    return {
+      "--bg": "#eef5fb",
+      "--fg": "#09111f",
+      "--muted": "rgba(15, 23, 42, 0.58)",
+      "--muted-2": "rgba(15, 23, 42, 0.38)",
+      "--line": "rgba(15, 23, 42, 0.12)",
+      "--card": "rgba(255, 255, 255, 0.74)",
+      "--card-strong": "rgba(255, 255, 255, 0.9)",
+      "--input": "rgba(255, 255, 255, 0.78)",
+      "--sidebar": "rgba(247, 252, 255, 0.88)",
+      "--cyan": "#06b6d4",
+      "--cyan-soft": "rgba(6, 182, 212, 0.12)",
+      "--red": "#ef4444",
+      "--red-soft": "rgba(239, 68, 68, 0.12)",
+      "--amber-soft": "rgba(245, 158, 11, 0.13)",
+      "--green-soft": "rgba(16, 185, 129, 0.13)",
+      "--shadow": "rgba(15, 23, 42, 0.08)",
+    };
+  }
+
+  return {
+    "--bg": "#050914",
+    "--fg": "#f8fafc",
+    "--muted": "rgba(255, 255, 255, 0.55)",
+    "--muted-2": "rgba(255, 255, 255, 0.34)",
+    "--line": "rgba(255, 255, 255, 0.1)",
+    "--card": "rgba(15, 23, 42, 0.76)",
+    "--card-strong": "rgba(15, 23, 42, 0.92)",
+    "--input": "rgba(2, 6, 23, 0.56)",
+    "--sidebar": "rgba(2, 6, 23, 0.9)",
+    "--cyan": "#22d3ee",
+    "--cyan-soft": "rgba(34, 211, 238, 0.12)",
+    "--red": "#f43f5e",
+    "--red-soft": "rgba(244, 63, 94, 0.13)",
+    "--amber-soft": "rgba(245, 158, 11, 0.13)",
+    "--green-soft": "rgba(16, 185, 129, 0.13)",
+    "--shadow": "rgba(0, 0, 0, 0.28)",
+  };
+}
 
 function getRiskStyle(risk: string) {
   if (risk === "Critical") return "border-red-400/35 bg-red-500/10 text-red-100";
@@ -147,6 +216,7 @@ ${input}
 }
 
 export default function Home() {
+  const [theme, setTheme] = useState<ThemeMode>("dark");
   const [mode, setMode] = useState<InputMode>(defaultDemoCase.mode);
   const [input, setInput] = useState(defaultDemoCase.content);
   const [selectedDemoId, setSelectedDemoId] = useState(defaultDemoCase.id);
@@ -155,6 +225,13 @@ export default function Home() {
   const [audioFileName, setAudioFileName] = useState<string | null>(null);
   const [history, setHistory] = useState<ScanHistoryItem[]>([]);
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [analysisStage, setAnalysisStage] = useState<AnalysisStage>("idle");
+  const [transcriptionSource, setTranscriptionSource] = useState<
+    "none" | "ai" | "simulated"
+  >("none");
+  const [transcriptionModel, setTranscriptionModel] = useState<string | null>(
+    null
+  );
 
   const localAnalysis = useMemo(
     () => analyzeScamContent({ content: input, mode, familyMode }),
@@ -170,6 +247,7 @@ export default function Home() {
   >("idle");
 
   const analysis = serverAnalysis || localAnalysis;
+  const isDark = theme === "dark";
 
   useEffect(() => {
     const saved = window.localStorage.getItem("callproof-history");
@@ -192,6 +270,7 @@ export default function Home() {
     setAiEnabled(false);
     setApiStatus("idle");
     setHasAnalyzed(false);
+    setAnalysisStage("idle");
   }
 
   function loadDemo(demo: DemoCase) {
@@ -199,17 +278,50 @@ export default function Home() {
     setMode(demo.mode);
     setInput(demo.content);
     setAudioFileName(null);
+    setTranscriptionSource("none");
+    setTranscriptionModel(null);
     resetServerResult();
   }
 
-  function handleAudioUpload(file: File | null) {
+  async function handleAudioUpload(file: File | null) {
     if (!file) return;
 
     setMode("audio");
     setAudioFileName(file.name);
-    setSelectedDemoId("fake-bank-call");
-    setInput(simulatedAudioTranscript);
-    resetServerResult();
+    setSelectedDemoId("custom-audio");
+    setServerAnalysis(null);
+    setAiEnabled(false);
+    setApiStatus("idle");
+    setHasAnalyzed(false);
+    setTranscriptionSource("none");
+    setTranscriptionModel(null);
+    setAnalysisStage("transcribing");
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", file);
+
+      const response = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await response.json()) as TranscribeApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error("Transcription failed");
+      }
+
+      setInput(data.transcript);
+      setTranscriptionSource("ai");
+      setTranscriptionModel(data.model);
+      setAnalysisStage("transcribed");
+    } catch {
+      setInput(simulatedAudioTranscript);
+      setTranscriptionSource("simulated");
+      setTranscriptionModel(null);
+      setAnalysisStage("error");
+    }
   }
 
   async function runAnalysis() {
@@ -217,6 +329,7 @@ export default function Home() {
 
     setIsAnalyzing(true);
     setApiStatus("idle");
+    setAnalysisStage("analyzing");
 
     try {
       const response = await fetch("/api/analyze", {
@@ -241,6 +354,7 @@ export default function Home() {
       setAiEnabled(data.aiEnabled);
       setApiStatus(data.aiEnabled ? "ai" : "fallback");
       setHasAnalyzed(true);
+      setAnalysisStage("ready");
 
       setHistory((prev) =>
         [createHistoryItem({ mode, analysis: data.analysis }), ...prev].slice(
@@ -253,6 +367,7 @@ export default function Home() {
       setAiEnabled(false);
       setApiStatus("error");
       setHasAnalyzed(true);
+      setAnalysisStage("error");
 
       setHistory((prev) =>
         [createHistoryItem({ mode, analysis: localAnalysis }), ...prev].slice(
@@ -266,16 +381,25 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050914] text-slate-50">
-      <div className="guard-glow absolute inset-0" />
-      <div className="guard-grid absolute inset-0 opacity-80" />
-      <div className="dots pointer-events-none absolute right-0 top-24 h-[430px] w-[430px] opacity-40" />
+    <main
+      style={getThemeStyle(theme)}
+      className="relative min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--fg)]"
+    >
+      <div
+        className={`absolute inset-0 ${
+          isDark
+            ? "bg-[radial-gradient(circle_at_17%_9%,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.19),transparent_28%),radial-gradient(circle_at_62%_100%,rgba(16,185,129,0.1),transparent_35%)]"
+            : "bg-[radial-gradient(circle_at_17%_9%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.12),transparent_28%),radial-gradient(circle_at_62%_100%,rgba(16,185,129,0.08),transparent_35%)]"
+        }`}
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.045)_1px,transparent_1px)] bg-[size:42px_42px]" />
+      <div className="pointer-events-none absolute right-0 top-24 h-[430px] w-[430px] bg-[radial-gradient(rgba(34,211,238,0.34)_1px,transparent_1px)] bg-[size:8px_8px] opacity-40 [mask-image:radial-gradient(circle,black,transparent_70%)]" />
 
       <div className="relative z-10 flex min-h-screen">
         <Sidebar />
 
         <section className="flex min-w-0 flex-1 flex-col">
-          <TopBar />
+          <TopBar theme={theme} setTheme={setTheme} />
 
           <div className="mx-auto w-full max-w-[1510px] px-5 py-5 lg:px-7">
             <div className="mb-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -283,7 +407,7 @@ export default function Home() {
                 icon={<ShieldCheck className="h-7 w-7" />}
                 label="Protection status"
                 value="Active"
-                detail="Real-time scam monitoring"
+                detail="Real-time scan monitoring"
                 tone="cyan"
               />
 
@@ -330,6 +454,9 @@ export default function Home() {
                   resetServerResult();
                 }}
                 isAnalyzing={isAnalyzing}
+                analysisStage={analysisStage}
+                transcriptionSource={transcriptionSource}
+                transcriptionModel={transcriptionModel}
                 onAnalyze={runAnalysis}
                 onAudioUpload={handleAudioUpload}
                 audioFileName={audioFileName}
@@ -402,6 +529,28 @@ export default function Home() {
   );
 }
 
+function ShellCard({
+  children,
+  className = "",
+  danger = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  danger?: boolean;
+}) {
+  return (
+    <section
+      className={`rounded-[2rem] border p-5 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl ${
+        danger
+          ? "border-red-400/25 bg-[linear-gradient(135deg,rgba(127,29,29,0.38),var(--card)),radial-gradient(circle_at_86%_22%,rgba(239,68,68,0.22),transparent_34%)]"
+          : "border-[var(--line)] bg-[linear-gradient(135deg,var(--card-strong),var(--card)),radial-gradient(circle_at_top_right,rgba(34,211,238,0.055),transparent_34%)]"
+      } ${className}`}
+    >
+      {children}
+    </section>
+  );
+}
+
 function Sidebar() {
   const items = [
     {
@@ -423,17 +572,19 @@ function Sidebar() {
   ];
 
   return (
-    <aside className="side hidden w-[292px] shrink-0 border-r border-cyan-300/10 p-5 backdrop-blur-xl lg:block">
+    <aside className="hidden w-[292px] shrink-0 border-r border-[var(--line)] bg-[var(--sidebar)] p-5 backdrop-blur-xl lg:block">
       <div className="mb-8 flex items-center gap-3">
         <div className="flex h-14 w-14 items-center justify-center rounded-[1.4rem] border border-cyan-300/35 bg-cyan-300/10 text-cyan-200 shadow-[0_0_35px_rgba(34,211,238,0.18)]">
           <Fingerprint className="h-8 w-8" />
         </div>
 
         <div>
-          <p className="text-2xl font-black tracking-tight text-white">
+          <p className="text-2xl font-semibold tracking-tight text-[var(--fg)]">
             CallProof
           </p>
-          <p className="text-xs font-bold text-cyan-300">Scam Protection</p>
+          <p className="text-xs font-semibold text-cyan-300">
+            Scan Protection
+          </p>
         </div>
       </div>
 
@@ -441,10 +592,10 @@ function Sidebar() {
         {items.map((item, index) => (
           <button
             key={item.label}
-            className={`relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold transition ${
+            className={`relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
               item.active
-                ? "bg-cyan-300/15 text-cyan-100 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.18)]"
-                : "text-white/55 hover:bg-white/[0.04] hover:text-white"
+                ? "bg-cyan-300/15 text-cyan-200 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.18)]"
+                : "text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--fg)]"
             }`}
           >
             {item.icon}
@@ -464,20 +615,20 @@ function Sidebar() {
           <ShieldCheck className="h-5 w-5" />
         </div>
 
-        <p className="font-black text-white">Stay one step ahead</p>
+        <p className="font-semibold text-[var(--fg)]">Stay one step ahead</p>
 
-        <p className="mt-2 text-sm leading-6 text-white/50">
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
           CallProof checks suspicious calls, messages, and audio before you
           respond.
         </p>
 
-        <button className="mt-4 w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-black text-cyan-100">
+        <button className="mt-4 w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-200">
           Protection active
         </button>
       </div>
 
       <div className="mt-7">
-        <p className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
           Protection signals
         </p>
 
@@ -493,30 +644,36 @@ function Sidebar() {
 
 function SidebarMetric({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
-      <p className="text-sm font-black text-white">{value}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/35">
+    <div className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-3">
+      <p className="text-sm font-semibold text-[var(--fg)]">{value}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
         {label}
       </p>
     </div>
   );
 }
 
-function TopBar() {
+function TopBar({
+  theme,
+  setTheme,
+}: {
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
+}) {
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 px-5 py-4 backdrop-blur-xl lg:px-7">
+    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--sidebar)] px-5 py-4 backdrop-blur-xl lg:px-7">
       <div className="mx-auto flex w-full max-w-[1510px] items-center justify-between gap-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.32em] text-cyan-200">
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300">
             Protection overview
           </p>
 
-          <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--fg)]">
             Scam call and message intelligence center
           </h1>
         </div>
 
-        <div className="hidden min-w-[390px] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-white/45 md:flex">
+        <div className="hidden min-w-[390px] items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 py-3 text-[var(--muted)] md:flex">
           <Search className="h-4 w-4" />
           <span className="text-sm">
             Search reports, red flags, numbers, or messages...
@@ -524,14 +681,33 @@ function TopBar() {
         </div>
 
         <div className="hidden items-center gap-3 md:flex">
-          <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-white/70">
+          <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--line)] bg-white/[0.05] text-[var(--muted)]">
             <Bell className="h-5 w-5" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-400" />
           </button>
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2">
-            <p className="text-sm font-bold text-white">Protected Demo</p>
-            <p className="text-xs text-cyan-200/70">Live risk monitoring</p>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex h-11 items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 text-sm font-semibold text-[var(--fg)]"
+          >
+            {theme === "dark" ? (
+              <>
+                <Sun className="h-4 w-4 text-amber-300" />
+                Light
+              </>
+            ) : (
+              <>
+                <Moon className="h-4 w-4 text-slate-600" />
+                Dark
+              </>
+            )}
+          </button>
+
+          <div className="rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 py-2">
+            <p className="text-sm font-semibold text-[var(--fg)]">
+              Protected Demo
+            </p>
+            <p className="text-xs text-cyan-300/80">Live risk monitoring</p>
           </div>
         </div>
       </div>
@@ -559,7 +735,7 @@ function OverviewCard({
   };
 
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
+    <ShellCard className="p-5">
       <div className="flex items-center gap-4">
         <div
           className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border ${toneMap[tone]}`}
@@ -568,16 +744,18 @@ function OverviewCard({
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-2)]">
             {label}
           </p>
 
-          <p className="mt-1 truncate text-xl font-black text-white">{value}</p>
+          <p className="mt-1 truncate text-xl font-semibold text-[var(--fg)]">
+            {value}
+          </p>
 
-          <p className="mt-1 text-sm text-white/45">{detail}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">{detail}</p>
         </div>
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -589,6 +767,9 @@ function AnalyzerPanel({
   familyMode,
   setFamilyMode,
   isAnalyzing,
+  analysisStage,
+  transcriptionSource,
+  transcriptionModel,
   onAnalyze,
   onAudioUpload,
   audioFileName,
@@ -600,23 +781,26 @@ function AnalyzerPanel({
   familyMode: boolean;
   setFamilyMode: (value: boolean) => void;
   isAnalyzing: boolean;
+  analysisStage: AnalysisStage;
+  transcriptionSource: "none" | "ai" | "simulated";
+  transcriptionModel: string | null;
   onAnalyze: () => void;
   onAudioUpload: (file: File | null) => void;
   audioFileName: string | null;
 }) {
   return (
-    <section className="card rounded-[2rem] border border-cyan-300/15 p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+    <ShellCard className="border-cyan-300/15">
       <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
             Scan your content
           </p>
-          <h2 className="mt-1 text-2xl font-black text-white">
+          <h2 className="mt-1 text-2xl font-semibold text-[var(--fg)]">
             Paste a message, transcript, or upload audio
           </h2>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-bold text-amber-100">
+        <label className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-200">
           <Users className="h-4 w-4" />
           Family Mode
           <input
@@ -657,9 +841,11 @@ function AnalyzerPanel({
                 <Upload className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-bold text-white">Upload call recording</p>
-                <p className="text-sm text-white/45">
-                  For MVP demo, upload fills a simulated transcript.
+                <p className="font-semibold text-[var(--fg)]">
+                  Upload call recording
+                </p>
+                <p className="text-sm text-[var(--muted)]">
+                  Audio is transcribed before scam analysis.
                 </p>
               </div>
             </div>
@@ -673,13 +859,13 @@ function AnalyzerPanel({
               }
             />
 
-            <span className="rounded-full bg-white px-4 py-2 text-xs font-black text-slate-950">
+            <span className="rounded-full bg-[var(--fg)] px-4 py-2 text-xs font-semibold text-[var(--bg)]">
               Choose file
             </span>
           </label>
 
           {audioFileName && (
-            <p className="mt-3 flex items-center gap-2 text-sm text-cyan-100">
+            <p className="mt-3 flex items-center gap-2 text-sm text-cyan-300">
               <FileAudio className="h-4 w-4" />
               Uploaded: {audioFileName}
             </p>
@@ -687,31 +873,158 @@ function AnalyzerPanel({
         </div>
       )}
 
+      <LoadingPipeline
+        stage={analysisStage}
+        transcriptionSource={transcriptionSource}
+        transcriptionModel={transcriptionModel}
+      />
+
       <textarea
         value={input}
         onChange={(event) => setInput(event.target.value)}
         rows={9}
-        className="thin-scrollbar w-full resize-none rounded-3xl border border-white/10 bg-black/45 p-5 font-mono text-sm leading-6 text-white outline-none transition placeholder:text-white/25 focus:border-cyan-300/50"
+        className="thin-scrollbar w-full resize-none rounded-3xl border border-[var(--line)] bg-[var(--input)] p-5 font-mono text-sm leading-6 text-[var(--fg)] outline-none transition placeholder:text-[var(--muted-2)] focus:border-cyan-300/50"
         placeholder="Paste a suspicious message, call transcript, or uploaded audio transcript here..."
       />
 
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           onClick={onAnalyze}
-          disabled={isAnalyzing || !input.trim()}
-          className="rounded-full bg-red-500 px-6 py-3 text-sm font-black text-white shadow-[0_0_30px_rgba(239,68,68,0.28)] transition hover:bg-red-400 disabled:opacity-50"
+          disabled={isAnalyzing || !input.trim() || analysisStage === "transcribing"}
+          className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(239,68,68,0.28)] transition hover:bg-red-400 disabled:opacity-50"
         >
-          {isAnalyzing ? "Analyzing risk..." : "Analyze now"}
+          {isAnalyzing
+            ? "Analyzing risk..."
+            : analysisStage === "transcribing"
+              ? "Transcribing audio..."
+              : "Analyze now"}
         </button>
 
         <button
           onClick={() => setInput("")}
-          className="rounded-full border border-white/10 bg-white/[0.03] px-6 py-3 text-sm font-black text-white transition hover:border-red-300/30"
+          className="rounded-full border border-[var(--line)] bg-white/[0.04] px-6 py-3 text-sm font-semibold text-[var(--fg)] transition hover:border-red-300/30"
         >
           Clear
         </button>
       </div>
-    </section>
+    </ShellCard>
+  );
+}
+
+function LoadingPipeline({
+  stage,
+  transcriptionSource,
+  transcriptionModel,
+}: {
+  stage: AnalysisStage;
+  transcriptionSource: "none" | "ai" | "simulated";
+  transcriptionModel: string | null;
+}) {
+  const steps = [
+    {
+      id: "transcribing",
+      label: "Transcribing",
+      description:
+        transcriptionSource === "ai"
+          ? `Audio transcribed with ${transcriptionModel || "OpenAI"}`
+          : transcriptionSource === "simulated"
+            ? "Transcription fallback used"
+            : "Waiting for audio upload",
+    },
+    {
+      id: "analyzing",
+      label: "Analyzing",
+      description: "Checking scam intent, red flags, and manipulation tactics",
+    },
+    {
+      id: "ready",
+      label: "Report ready",
+      description: "Risk score, evidence, and safe next steps generated",
+    },
+  ] as const;
+
+  function getStepState(stepId: (typeof steps)[number]["id"]) {
+    if (stage === "error") {
+      if (stepId === "transcribing" && transcriptionSource === "simulated") {
+        return "warning";
+      }
+
+      return "idle";
+    }
+
+    if (stage === "ready") return "done";
+
+    if (stage === "transcribed") {
+      return stepId === "transcribing" ? "done" : "idle";
+    }
+
+    if (stage === "analyzing") {
+      if (stepId === "transcribing") return "done";
+      if (stepId === "analyzing") return "active";
+      return "idle";
+    }
+
+    if (stage === "transcribing") {
+      return stepId === "transcribing" ? "active" : "idle";
+    }
+
+    return "idle";
+  }
+
+  return (
+    <div className="mb-4 rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
+      <div className="grid gap-3 md:grid-cols-3">
+        {steps.map((step) => {
+          const state = getStepState(step.id);
+
+          return (
+            <div
+              key={step.id}
+              className={`rounded-2xl border p-3 ${
+                state === "done"
+                  ? "border-emerald-300/20 bg-emerald-300/10"
+                  : state === "active"
+                    ? "border-cyan-300/30 bg-cyan-300/10"
+                    : state === "warning"
+                      ? "border-amber-300/30 bg-amber-300/10"
+                      : "border-[var(--line)] bg-white/[0.03]"
+              }`}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                    state === "done"
+                      ? "bg-emerald-300 text-slate-950"
+                      : state === "active"
+                        ? "bg-cyan-300 text-slate-950"
+                        : state === "warning"
+                          ? "bg-amber-300 text-slate-950"
+                          : "bg-white/10 text-[var(--muted)]"
+                  }`}
+                >
+                  {state === "done" ? "✓" : state === "active" ? "…" : "•"}
+                </span>
+
+                <p className="text-sm font-semibold text-[var(--fg)]">
+                  {step.label}
+                </p>
+              </div>
+
+              <p className="text-xs leading-5 text-[var(--muted)]">
+                {step.description}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {stage === "error" && (
+        <p className="mt-3 text-sm text-amber-300">
+          Audio transcription failed, so CallProof used the demo transcript
+          fallback. Text analysis still works normally.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -742,19 +1055,19 @@ function ResultPanel({
     analysis.riskLevel === "Critical" || analysis.riskLevel === "High";
 
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
+    <ShellCard>
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-200">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">
             Latest analysis
           </p>
 
-          <h2 className="mt-1 text-2xl font-black tracking-tight text-white">
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--fg)]">
             Scam risk decision
           </h2>
         </div>
 
-        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-black text-white/70">
+        <span className="rounded-full border border-[var(--line)] bg-white/[0.04] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
           {statusText}
         </span>
       </div>
@@ -762,7 +1075,7 @@ function ResultPanel({
       <div
         className={`relative overflow-hidden rounded-[2rem] border p-5 ${
           isDanger
-            ? "red-card border-red-400/35"
+            ? "border-red-400/35 bg-[linear-gradient(135deg,rgba(127,29,29,0.46),rgba(15,23,42,0.68)),radial-gradient(circle_at_86%_22%,rgba(239,68,68,0.24),transparent_34%)]"
             : getRiskStyle(analysis.riskLevel)
         }`}
       >
@@ -771,15 +1084,15 @@ function ResultPanel({
 
         <div className="relative flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.24em] opacity-75">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-75">
               Scam probability
             </p>
 
-            <p className="mt-2 text-7xl font-black tracking-tight text-white">
+            <p className="mt-2 text-7xl font-bold tracking-tight text-white">
               {isAnalyzing ? "..." : `${analysis.scamProbability}%`}
             </p>
 
-            <p className="mt-2 text-lg font-black text-white">
+            <p className="mt-2 text-lg font-semibold text-white">
               {analysis.riskLevel} risk
             </p>
           </div>
@@ -809,22 +1122,24 @@ function ResultPanel({
         </div>
       </div>
 
-      <div className="mt-4 rounded-3xl border border-white/10 bg-black/25 p-4">
-        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-cyan-200">
+      <div className="mt-4 rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
           Explanation
         </p>
 
-        <p className="text-sm leading-6 text-white/65">{analysis.summary}</p>
+        <p className="text-sm leading-6 text-[var(--muted)]">
+          {analysis.summary}
+        </p>
       </div>
 
       <button
         onClick={onExport}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--fg)] px-5 py-3 text-sm font-semibold text-[var(--bg)] transition hover:bg-cyan-200"
       >
         <Download className="h-4 w-4" />
         Export safety report
       </button>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -834,7 +1149,7 @@ function ResultMeta({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-[0.18em] opacity-50">
         {label}
       </p>
-      <p className="mt-1 truncate font-black">{value}</p>
+      <p className="mt-1 truncate font-semibold">{value}</p>
     </div>
   );
 }
@@ -853,10 +1168,10 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-black transition ${
+      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
         active
-          ? "border-red-300/50 bg-red-300/15 text-red-100"
-          : "border-white/10 bg-white/[0.03] text-white/55 hover:border-cyan-300/30"
+          ? "border-red-300/50 bg-red-300/15 text-red-200"
+          : "border-[var(--line)] bg-white/[0.04] text-[var(--muted)] hover:border-cyan-300/30 hover:text-[var(--fg)]"
       }`}
     >
       {icon}
@@ -873,18 +1188,18 @@ function DemoCasesPanel({
   onLoadDemo: (demo: DemoCase) => void;
 }) {
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
+    <ShellCard>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-200">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
             Demo cases
           </p>
-          <h3 className="mt-1 text-xl font-black text-white">
+          <h3 className="mt-1 text-xl font-semibold text-[var(--fg)]">
             Realistic scam attempts
           </h3>
         </div>
 
-        <p className="text-sm text-white/40">{demoCases.length} cases</p>
+        <p className="text-sm text-[var(--muted)]">{demoCases.length} cases</p>
       </div>
 
       <div className="space-y-3">
@@ -895,19 +1210,21 @@ function DemoCasesPanel({
             className={`flex w-full items-center justify-between gap-3 rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 ${
               selectedDemoId === demo.id
                 ? "border-red-300/50 bg-red-300/10"
-                : "border-white/10 bg-black/25 hover:border-cyan-300/30"
+                : "border-[var(--line)] bg-white/[0.04] hover:border-cyan-300/30"
             }`}
           >
             <div>
-              <p className="font-bold text-white">{demo.title}</p>
-              <p className="mt-1 text-sm text-white/45">{demo.subtitle}</p>
+              <p className="font-semibold text-[var(--fg)]">{demo.title}</p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {demo.subtitle}
+              </p>
             </div>
 
-            <ChevronRight className="h-4 w-4 text-white/35" />
+            <ChevronRight className="h-4 w-4 text-[var(--muted-2)]" />
           </button>
         ))}
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -937,14 +1254,16 @@ function RecentAlertsPanel() {
   ];
 
   return (
-    <section className="red-card rounded-[2rem] border border-red-400/25 p-5 backdrop-blur-xl">
+    <ShellCard danger>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-xl font-black text-white">
+        <h3 className="flex items-center gap-2 text-xl font-semibold text-white">
           <BadgeAlert className="h-5 w-5 text-red-300" />
           Recent alerts
         </h3>
 
-        <button className="text-sm font-bold text-red-200/80">View all</button>
+        <button className="text-sm font-semibold text-red-200/80">
+          View all
+        </button>
       </div>
 
       <div className="space-y-3">
@@ -958,12 +1277,12 @@ function RecentAlertsPanel() {
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="truncate font-black text-white">{alert.title}</p>
+              <p className="truncate font-semibold text-white">{alert.title}</p>
               <p className="mt-1 text-sm text-white/45">{alert.detail}</p>
             </div>
 
             <div className="text-right">
-              <span className="rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1 text-xs font-black text-red-100">
+              <span className="rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1 text-xs font-semibold text-red-100">
                 {alert.severity}
               </span>
               <p className="mt-2 text-xs text-white/35">{alert.time}</p>
@@ -971,7 +1290,7 @@ function RecentAlertsPanel() {
           </div>
         ))}
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -994,8 +1313,8 @@ function SignalPanel({
       : "border-amber-300/15 bg-amber-300/10 text-amber-100";
 
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-white">
+    <ShellCard>
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--fg)]">
         {icon}
         {title}
       </h3>
@@ -1011,10 +1330,10 @@ function SignalPanel({
             </div>
           ))
         ) : (
-          <p className="text-sm text-white/45">{empty}</p>
+          <p className="text-sm text-[var(--muted)]">{empty}</p>
         )}
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -1029,26 +1348,28 @@ function SafeReplyPanel({
 }) {
   return (
     <section className="rounded-[2rem] border border-emerald-300/15 bg-emerald-300/10 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-lg font-black text-white">
+      <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--fg)]">
         <ShieldCheck className="h-5 w-5 text-emerald-300" />
         Safe action
       </h3>
 
-      <p className="text-sm leading-6 text-white/70">{analysis.safeReply}</p>
+      <p className="text-sm leading-6 text-[var(--muted)]">
+        {analysis.safeReply}
+      </p>
 
       {familyMode && (
         <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-3">
-          <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
             Family Mode
           </p>
-          <p className="text-sm leading-6 text-white/70">
+          <p className="text-sm leading-6 text-[var(--muted)]">
             {analysis.familyModeAdvice}
           </p>
         </div>
       )}
 
       {!hasAnalyzed && (
-        <p className="mt-4 text-xs text-white/35">
+        <p className="mt-4 text-xs text-[var(--muted-2)]">
           Run analysis to save this result into scan history.
         </p>
       )}
@@ -1058,9 +1379,9 @@ function SafeReplyPanel({
 
 function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
-        <ClipboardCheck className="h-6 w-6 text-cyan-200" />
+    <ShellCard>
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
+        <ClipboardCheck className="h-6 w-6 text-cyan-300" />
         Evidence highlights
       </h3>
 
@@ -1069,21 +1390,21 @@ function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
           analysis.evidence.map((item, index) => (
             <div
               key={`${item.text}-${index}`}
-              className="rounded-3xl border border-white/10 bg-black/25 p-4"
+              className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4"
             >
-              <p className="font-mono text-sm text-cyan-100">“{item.text}”</p>
-              <p className="mt-2 text-sm leading-6 text-white/50">
+              <p className="font-mono text-sm text-cyan-300">“{item.text}”</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 {item.reason}
               </p>
             </div>
           ))
         ) : (
-          <p className="rounded-3xl border border-white/10 bg-black/25 p-4 text-sm text-white/45">
+          <p className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
             No suspicious evidence highlighted yet.
           </p>
         )}
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -1099,8 +1420,8 @@ function NextStepsPanel({
   aiEnabled: boolean;
 }) {
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
+    <ShellCard>
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
         <CheckCircle2 className="h-6 w-6 text-emerald-300" />
         What to do now
       </h3>
@@ -1109,7 +1430,7 @@ function NextStepsPanel({
         {analysis.nextSteps.map((step) => (
           <div
             key={step}
-            className="flex gap-3 rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-white/65"
+            className="flex gap-3 rounded-2xl border border-[var(--line)] bg-white/[0.04] p-3 text-sm text-[var(--muted)]"
           >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
             <span>{step}</span>
@@ -1120,12 +1441,12 @@ function NextStepsPanel({
       <button
         onClick={() => downloadReport({ input, mode, analysis, aiEnabled })}
         disabled={!input.trim()}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-white disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:opacity-50"
       >
         <Download className="h-4 w-4" />
         Export safety report
       </button>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -1137,16 +1458,16 @@ function HistoryPanel({
   onClear: () => void;
 }) {
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
+    <ShellCard>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-2xl font-black text-white">
-          <History className="h-6 w-6 text-cyan-200" />
+        <h3 className="flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
+          <History className="h-6 w-6 text-cyan-300" />
           Scan history
         </h3>
 
         <button
           onClick={onClear}
-          className="text-sm text-white/40 hover:text-white"
+          className="text-sm text-[var(--muted)] hover:text-[var(--fg)]"
         >
           Clear
         </button>
@@ -1157,18 +1478,20 @@ function HistoryPanel({
           history.map((item) => (
             <div
               key={item.id}
-              className="rounded-3xl border border-white/10 bg-black/25 p-4"
+              className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-black text-white">{item.attackType}</p>
-                  <p className="mt-1 text-xs text-white/40">
+                  <p className="font-semibold text-[var(--fg)]">
+                    {item.attackType}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--muted)]">
                     {new Date(item.createdAt).toLocaleString()} • {item.mode}
                   </p>
                 </div>
 
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-black ${getRiskStyle(
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${getRiskStyle(
                     item.riskLevel
                   )}`}
                 >
@@ -1178,19 +1501,19 @@ function HistoryPanel({
             </div>
           ))
         ) : (
-          <p className="rounded-3xl border border-white/10 bg-black/25 p-4 text-sm text-white/45">
+          <p className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
             No scans yet. Run your first analysis.
           </p>
         )}
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
 function EducationPanel() {
   return (
-    <section className="card rounded-[2rem] border border-white/10 p-5 backdrop-blur-xl">
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-black text-white">
+    <ShellCard>
+      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
         <Sparkles className="h-6 w-6 text-amber-300" />
         Scam education
       </h3>
@@ -1217,7 +1540,7 @@ function EducationPanel() {
           text="Family Mode explains risk in simpler language for people who may be less comfortable with technology."
         />
       </div>
-    </section>
+    </ShellCard>
   );
 }
 
@@ -1231,12 +1554,12 @@ function EducationCard({
   text: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-black/25 p-4">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-300/10 text-amber-200">
+    <div className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-300/10 text-amber-300">
         {icon}
       </div>
-      <p className="font-black text-white">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white/50">{text}</p>
+      <p className="font-semibold text-[var(--fg)]">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{text}</p>
     </div>
   );
 }
