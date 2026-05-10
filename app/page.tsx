@@ -27,6 +27,7 @@ import {
   Radar,
   Search,
   Settings,
+  Shield,
   ShieldCheck,
   Siren,
   Skull,
@@ -95,50 +96,50 @@ type ThemeStyle = CSSProperties & Record<`--${string}`, string>;
 function getThemeStyle(theme: ThemeMode): ThemeStyle {
   if (theme === "light") {
     return {
-      "--bg": "#eef5fb",
-      "--fg": "#09111f",
-      "--muted": "rgba(15, 23, 42, 0.58)",
-      "--muted-2": "rgba(15, 23, 42, 0.38)",
-      "--line": "rgba(15, 23, 42, 0.12)",
-      "--card": "rgba(255, 255, 255, 0.74)",
-      "--card-strong": "rgba(255, 255, 255, 0.9)",
-      "--input": "rgba(255, 255, 255, 0.78)",
-      "--sidebar": "rgba(247, 252, 255, 0.88)",
-      "--cyan": "#06b6d4",
-      "--cyan-soft": "rgba(6, 182, 212, 0.12)",
-      "--red": "#ef4444",
-      "--red-soft": "rgba(239, 68, 68, 0.12)",
-      "--amber-soft": "rgba(245, 158, 11, 0.13)",
-      "--green-soft": "rgba(16, 185, 129, 0.13)",
-      "--shadow": "rgba(15, 23, 42, 0.08)",
+      "--bg": "#eef4fb",
+      "--panel": "rgba(255,255,255,0.78)",
+      "--panel-strong": "rgba(255,255,255,0.92)",
+      "--sidebar": "rgba(244,249,255,0.9)",
+      "--input": "rgba(255,255,255,0.8)",
+      "--fg": "#07111f",
+      "--muted": "rgba(15,23,42,0.58)",
+      "--muted2": "rgba(15,23,42,0.38)",
+      "--line": "rgba(15,23,42,0.12)",
+      "--cyan": "#0891b2",
+      "--red": "#e11d48",
+      "--green": "#059669",
+      "--shadow": "rgba(15,23,42,0.08)",
+      "--grid": "rgba(8,145,178,0.08)",
     };
   }
 
   return {
     "--bg": "#050914",
+    "--panel": "rgba(9,15,30,0.86)",
+    "--panel-strong": "rgba(12,19,36,0.95)",
+    "--sidebar": "rgba(3,8,20,0.94)",
+    "--input": "rgba(2,6,23,0.62)",
     "--fg": "#f8fafc",
-    "--muted": "rgba(255, 255, 255, 0.55)",
-    "--muted-2": "rgba(255, 255, 255, 0.34)",
-    "--line": "rgba(255, 255, 255, 0.1)",
-    "--card": "rgba(15, 23, 42, 0.76)",
-    "--card-strong": "rgba(15, 23, 42, 0.92)",
-    "--input": "rgba(2, 6, 23, 0.56)",
-    "--sidebar": "rgba(2, 6, 23, 0.9)",
+    "--muted": "rgba(255,255,255,0.58)",
+    "--muted2": "rgba(255,255,255,0.34)",
+    "--line": "rgba(255,255,255,0.1)",
     "--cyan": "#22d3ee",
-    "--cyan-soft": "rgba(34, 211, 238, 0.12)",
-    "--red": "#f43f5e",
-    "--red-soft": "rgba(244, 63, 94, 0.13)",
-    "--amber-soft": "rgba(245, 158, 11, 0.13)",
-    "--green-soft": "rgba(16, 185, 129, 0.13)",
-    "--shadow": "rgba(0, 0, 0, 0.28)",
+    "--red": "#fb2c55",
+    "--green": "#22c55e",
+    "--shadow": "rgba(0,0,0,0.28)",
+    "--grid": "rgba(34,211,238,0.052)",
   };
 }
 
 function getRiskStyle(risk: string) {
-  if (risk === "Critical") return "border-red-400/35 bg-red-500/10 text-red-100";
-  if (risk === "High") return "border-orange-400/35 bg-orange-500/10 text-orange-100";
-  if (risk === "Medium") return "border-amber-400/35 bg-amber-500/10 text-amber-100";
-  return "border-emerald-400/35 bg-emerald-500/10 text-emerald-100";
+  if (risk === "Critical") return "border-red-400/40 bg-red-500/10 text-red-100";
+  if (risk === "High") return "border-orange-400/40 bg-orange-500/10 text-orange-100";
+  if (risk === "Medium") return "border-amber-400/40 bg-amber-500/10 text-amber-100";
+  return "border-emerald-400/40 bg-emerald-500/10 text-emerald-100";
+}
+
+function isDangerRisk(risk: string) {
+  return risk === "Critical" || risk === "High";
 }
 
 function createHistoryItem({
@@ -247,7 +248,7 @@ export default function Home() {
   >("idle");
 
   const analysis = serverAnalysis || localAnalysis;
-  const isDark = theme === "dark";
+  const dangerous = isDangerRisk(analysis.riskLevel);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("callproof-history");
@@ -385,15 +386,7 @@ export default function Home() {
       style={getThemeStyle(theme)}
       className="relative min-h-screen overflow-hidden bg-[var(--bg)] text-[var(--fg)]"
     >
-      <div
-        className={`absolute inset-0 ${
-          isDark
-            ? "bg-[radial-gradient(circle_at_17%_9%,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.19),transparent_28%),radial-gradient(circle_at_62%_100%,rgba(16,185,129,0.1),transparent_35%)]"
-            : "bg-[radial-gradient(circle_at_17%_9%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.12),transparent_28%),radial-gradient(circle_at_62%_100%,rgba(16,185,129,0.08),transparent_35%)]"
-        }`}
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(34,211,238,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,0.045)_1px,transparent_1px)] bg-[size:42px_42px]" />
-      <div className="pointer-events-none absolute right-0 top-24 h-[430px] w-[430px] bg-[radial-gradient(rgba(34,211,238,0.34)_1px,transparent_1px)] bg-[size:8px_8px] opacity-40 [mask-image:radial-gradient(circle,black,transparent_70%)]" />
+      <BackgroundEffects />
 
       <div className="relative z-10 flex min-h-screen">
         <Sidebar />
@@ -401,42 +394,39 @@ export default function Home() {
         <section className="flex min-w-0 flex-1 flex-col">
           <TopBar theme={theme} setTheme={setTheme} />
 
-          <div className="mx-auto w-full max-w-[1510px] px-5 py-5 lg:px-7">
-            <div className="mb-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              <OverviewCard
-                icon={<ShieldCheck className="h-7 w-7" />}
-                label="Protection status"
-                value="Active"
-                detail="Real-time scan monitoring"
-                tone="cyan"
-              />
-
-              <OverviewCard
-                icon={<Radar className="h-7 w-7" />}
-                label="Risk score"
-                value={`${analysis.scamProbability}/100`}
-                detail={`${analysis.riskLevel} risk`}
-                tone="red"
-              />
-
-              <OverviewCard
-                icon={<Siren className="h-7 w-7" />}
-                label="Threat type"
-                value={analysis.attackType}
-                detail="Latest analysis pattern"
-                tone="red"
-              />
-
-              <OverviewCard
-                icon={<Zap className="h-7 w-7" />}
-                label="Review engine"
-                value={aiEnabled ? "AI review" : "Fallback"}
-                detail={aiEnabled ? "Semantic analysis" : "Rules active"}
-                tone="emerald"
-              />
+          <div className="mx-auto w-full max-w-[1480px] px-5 py-5 lg:px-6">
+            <div className="mb-4">
+              <p className="text-xs font-medium uppercase tracking-[0.42em] text-cyan-300">
+                Protection overview
+              </p>
+              <h1 className="mt-1 text-[26px] font-semibold tracking-tight text-[var(--fg)]">
+                Your scam defense dashboard
+              </h1>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                Real-time detection for suspicious calls, messages, audio, and social engineering.
+              </p>
             </div>
 
-            <div className="mb-5 grid gap-5 xl:grid-cols-[1.06fr_0.94fr]">
+            <div className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr_0.95fr_1.05fr]">
+              <RiskScoreCard analysis={analysis} />
+              <MetricCard
+                title="Threats Blocked"
+                value={String(history.filter((item) => item.score >= 65).length || 1_247)}
+                detail="+18 this week"
+                tone="red"
+                chart="bars"
+              />
+              <MetricCard
+                title="Verified Contacts"
+                value="156"
+                detail="Trusted & verified contacts"
+                tone="cyan"
+                chart="none"
+              />
+              <ProtectionLevelCard />
+            </div>
+
+            <div className="mb-5 grid gap-4 xl:grid-cols-[1.1fr_0.75fr_1.15fr]">
               <AnalyzerPanel
                 mode={mode}
                 setMode={(nextMode) => {
@@ -462,39 +452,38 @@ export default function Home() {
                 audioFileName={audioFileName}
               />
 
-              <ResultPanel
+              <RecentAlertsPanel />
+
+              <LatestAnalysisPanel
                 analysis={analysis}
                 isAnalyzing={isAnalyzing}
                 aiEnabled={aiEnabled}
                 apiStatus={apiStatus}
+                dangerous={dangerous}
                 onExport={() =>
                   downloadReport({ input, mode, analysis, aiEnabled })
                 }
               />
             </div>
 
-            <div className="mb-5 grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
-              <div className="space-y-5">
-                <DemoCasesPanel
-                  selectedDemoId={selectedDemoId}
-                  onLoadDemo={loadDemo}
-                />
+            <div className="mb-5 grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+              <DemoCasesPanel
+                selectedDemoId={selectedDemoId}
+                onLoadDemo={loadDemo}
+              />
 
-                <RecentAlertsPanel />
-              </div>
-
-              <div className="grid gap-5 lg:grid-cols-3">
+              <div className="grid gap-4 lg:grid-cols-3">
                 <SignalPanel
-                  title="Key red flags"
-                  icon={<Siren className="h-5 w-5 text-red-300" />}
+                  title="Key Red Flags"
+                  icon={<Siren className="h-4 w-4 text-red-300" />}
                   items={analysis.redFlags}
                   empty="No strong red flags detected."
                   tone="red"
                 />
 
                 <SignalPanel
-                  title="Tactics detected"
-                  icon={<BellRing className="h-5 w-5 text-amber-300" />}
+                  title="Tactics Detected"
+                  icon={<BellRing className="h-4 w-4 text-amber-300" />}
                   items={analysis.tactics}
                   empty="No manipulation tactics detected."
                   tone="amber"
@@ -508,7 +497,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+            <div className="mb-5 grid gap-4 xl:grid-cols-[1fr_1fr]">
               <EvidencePanel analysis={analysis} />
               <NextStepsPanel
                 analysis={analysis}
@@ -518,7 +507,7 @@ export default function Home() {
               />
             </div>
 
-            <div className="grid gap-5 xl:grid-cols-[0.85fr_1.15fr]">
+            <div className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
               <HistoryPanel history={history} onClear={() => setHistory([])} />
               <EducationPanel />
             </div>
@@ -529,7 +518,18 @@ export default function Home() {
   );
 }
 
-function ShellCard({
+function BackgroundEffects() {
+  return (
+    <>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_10%,rgba(34,211,238,0.2),transparent_28%),radial-gradient(circle_at_86%_18%,rgba(239,68,68,0.24),transparent_30%),radial-gradient(circle_at_55%_100%,rgba(16,185,129,0.1),transparent_35%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(var(--grid)_1px,transparent_1px),linear-gradient(90deg,var(--grid)_1px,transparent_1px)] bg-[size:42px_42px]" />
+      <div className="pointer-events-none absolute right-0 top-24 h-[440px] w-[440px] bg-[radial-gradient(rgba(34,211,238,0.46)_1px,transparent_1px)] bg-[size:8px_8px] opacity-45 [mask-image:radial-gradient(circle,black,transparent_70%)]" />
+      <div className="pointer-events-none absolute right-0 top-0 h-full w-[35%] bg-[linear-gradient(90deg,transparent,rgba(239,68,68,0.08))]" />
+    </>
+  );
+}
+
+function Card({
   children,
   className = "",
   danger = false,
@@ -540,10 +540,10 @@ function ShellCard({
 }) {
   return (
     <section
-      className={`rounded-[2rem] border p-5 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl ${
+      className={`rounded-[18px] border p-4 shadow-[0_18px_60px_var(--shadow)] backdrop-blur-xl ${
         danger
-          ? "border-red-400/25 bg-[linear-gradient(135deg,rgba(127,29,29,0.38),var(--card)),radial-gradient(circle_at_86%_22%,rgba(239,68,68,0.22),transparent_34%)]"
-          : "border-[var(--line)] bg-[linear-gradient(135deg,var(--card-strong),var(--card)),radial-gradient(circle_at_top_right,rgba(34,211,238,0.055),transparent_34%)]"
+          ? "border-red-400/25 bg-[linear-gradient(135deg,rgba(60,12,20,0.9),var(--panel)),radial-gradient(circle_at_84%_25%,rgba(239,68,68,0.25),transparent_34%)]"
+          : "border-[var(--line)] bg-[linear-gradient(135deg,var(--panel-strong),var(--panel)),radial-gradient(circle_at_top_right,rgba(34,211,238,0.055),transparent_34%)]"
       } ${className}`}
     >
       {children}
@@ -551,19 +551,21 @@ function ShellCard({
   );
 }
 
+function LogoMark() {
+  return (
+    <div className="relative flex h-11 w-11 items-center justify-center rounded-[14px] border border-red-400/35 bg-red-500/10 text-red-300 shadow-[0_0_28px_rgba(239,68,68,0.2)]">
+      <Shield className="h-6 w-6" />
+      <div className="absolute inset-1 rounded-[11px] border border-red-400/10" />
+    </div>
+  );
+}
+
 function Sidebar() {
   const items = [
-    {
-      label: "Dashboard",
-      icon: <LayoutDashboard className="h-4 w-4" />,
-      active: true,
-    },
-    { label: "Alerts", icon: <Bell className="h-4 w-4" /> },
+    { label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" />, active: true },
+    { label: "Alerts", icon: <Bell className="h-4 w-4" />, badge: "3" },
     { label: "Call Protection", icon: <Phone className="h-4 w-4" /> },
-    {
-      label: "Message Protection",
-      icon: <MessageSquareText className="h-4 w-4" />,
-    },
+    { label: "Message Protection", icon: <MessageSquareText className="h-4 w-4" /> },
     { label: "Audio Scanner", icon: <AudioLines className="h-4 w-4" /> },
     { label: "Trusted Contacts", icon: <UserCheck className="h-4 w-4" /> },
     { label: "Reports", icon: <FileText className="h-4 w-4" /> },
@@ -572,67 +574,62 @@ function Sidebar() {
   ];
 
   return (
-    <aside className="hidden w-[292px] shrink-0 border-r border-[var(--line)] bg-[var(--sidebar)] p-5 backdrop-blur-xl lg:block">
-      <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-[1.4rem] border border-cyan-300/35 bg-cyan-300/10 text-cyan-200 shadow-[0_0_35px_rgba(34,211,238,0.18)]">
-          <Fingerprint className="h-8 w-8" />
-        </div>
+    <aside className="hidden w-[258px] shrink-0 border-r border-[var(--line)] bg-[var(--sidebar)] p-4 backdrop-blur-xl lg:block">
+      <div className="mb-7 flex items-center gap-3">
+        <LogoMark />
 
         <div>
-          <p className="text-2xl font-semibold tracking-tight text-[var(--fg)]">
+          <p className="text-xl font-semibold tracking-tight text-[var(--fg)]">
             CallProof
           </p>
-          <p className="text-xs font-semibold text-cyan-300">
-            Scan Protection
-          </p>
+          <p className="text-xs font-medium text-cyan-300">Scan Protection</p>
         </div>
       </div>
 
-      <nav className="space-y-2">
-        {items.map((item, index) => (
+      <nav className="space-y-1.5">
+        {items.map((item) => (
           <button
             key={item.label}
-            className={`relative flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition ${
+            className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
               item.active
-                ? "bg-cyan-300/15 text-cyan-200 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.18)]"
+                ? "bg-red-500/15 text-red-100 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.18)]"
                 : "text-[var(--muted)] hover:bg-white/[0.05] hover:text-[var(--fg)]"
             }`}
           >
             {item.icon}
             {item.label}
 
-            {index === 1 && (
-              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                3
+            {item.badge && (
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white shadow-[0_0_20px_rgba(239,68,68,0.35)]">
+                {item.badge}
               </span>
             )}
           </button>
         ))}
       </nav>
 
-      <div className="mt-8 rounded-3xl border border-cyan-300/15 bg-cyan-300/10 p-4">
-        <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950">
+      <div className="mt-8 rounded-2xl border border-cyan-300/15 bg-cyan-300/10 p-4">
+        <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-300 text-slate-950">
           <ShieldCheck className="h-5 w-5" />
         </div>
 
-        <p className="font-semibold text-[var(--fg)]">Stay one step ahead</p>
+        <p className="text-sm font-semibold text-[var(--fg)]">Stay one step ahead</p>
 
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          CallProof checks suspicious calls, messages, and audio before you
-          respond.
+          CallProof checks suspicious calls, messages, and audio before you respond.
         </p>
 
-        <button className="mt-4 w-full rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-200">
+        <button className="mt-4 w-full rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-2.5 text-sm font-medium text-cyan-200">
           Protection active
         </button>
       </div>
 
-      <div className="mt-7">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">
-          Protection signals
+      <div className="mt-6">
+        <p className="mb-3 text-xs font-medium uppercase tracking-[0.26em] text-cyan-300">
+          Quick stats
         </p>
 
-        <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="grid grid-cols-3 gap-2 text-center">
           <SidebarMetric value="AI" label="Review" />
           <SidebarMetric value="Local" label="Logs" />
           <SidebarMetric value="Safe" label="Mode" />
@@ -644,9 +641,9 @@ function Sidebar() {
 
 function SidebarMetric({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-3">
+    <div className="rounded-xl border border-[var(--line)] bg-white/[0.04] p-2.5">
       <p className="text-sm font-semibold text-[var(--fg)]">{value}</p>
-      <p className="mt-1 text-[10px] uppercase tracking-[0.14em] text-[var(--muted-2)]">
+      <p className="mt-1 text-[9px] uppercase tracking-[0.14em] text-[var(--muted2)]">
         {label}
       </p>
     </div>
@@ -661,34 +658,23 @@ function TopBar({
   setTheme: (theme: ThemeMode) => void;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--sidebar)] px-5 py-4 backdrop-blur-xl lg:px-7">
-      <div className="mx-auto flex w-full max-w-[1510px] items-center justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-300">
-            Protection overview
-          </p>
-
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--fg)]">
-            Scam call and message intelligence center
-          </h1>
-        </div>
-
-        <div className="hidden min-w-[390px] items-center gap-3 rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 py-3 text-[var(--muted)] md:flex">
+    <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--sidebar)] px-5 py-3.5 backdrop-blur-xl lg:px-6">
+      <div className="mx-auto flex w-full max-w-[1480px] items-center justify-between gap-4">
+        <div className="hidden min-w-[390px] items-center gap-3 rounded-xl border border-[var(--line)] bg-white/[0.05] px-4 py-2.5 text-[var(--muted)] md:flex">
           <Search className="h-4 w-4" />
-          <span className="text-sm">
-            Search reports, red flags, numbers, or messages...
-          </span>
+          <span className="text-sm">Search numbers, messages, reports...</span>
+          <span className="ml-auto text-xs text-[var(--muted2)]">⌘ K</span>
         </div>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <button className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--line)] bg-white/[0.05] text-[var(--muted)]">
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-400" />
+        <div className="ml-auto flex items-center gap-3">
+          <button className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--line)] bg-white/[0.05] text-[var(--muted)]">
+            <Bell className="h-4 w-4" />
+            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-400 shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
           </button>
 
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="flex h-11 items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 text-sm font-semibold text-[var(--fg)]"
+            className="flex h-10 items-center gap-2 rounded-xl border border-[var(--line)] bg-white/[0.05] px-3 text-sm font-medium text-[var(--fg)]"
           >
             {theme === "dark" ? (
               <>
@@ -697,17 +683,15 @@ function TopBar({
               </>
             ) : (
               <>
-                <Moon className="h-4 w-4 text-slate-600" />
+                <Moon className="h-4 w-4 text-slate-700" />
                 Dark
               </>
             )}
           </button>
 
-          <div className="rounded-2xl border border-[var(--line)] bg-white/[0.05] px-4 py-2">
-            <p className="text-sm font-semibold text-[var(--fg)]">
-              Protected Demo
-            </p>
-            <p className="text-xs text-cyan-300/80">Live risk monitoring</p>
+          <div className="hidden rounded-xl border border-[var(--line)] bg-white/[0.05] px-4 py-2 md:block">
+            <p className="text-sm font-medium text-[var(--fg)]">Protected User</p>
+            <p className="text-xs text-cyan-300/80">Premium Plan</p>
           </div>
         </div>
       </div>
@@ -715,47 +699,106 @@ function TopBar({
   );
 }
 
-function OverviewCard({
-  icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  detail: string;
-  tone: "cyan" | "red" | "emerald";
-}) {
-  const toneMap = {
-    cyan: "text-cyan-200 bg-cyan-300/10 border-cyan-300/15",
-    red: "text-red-200 bg-red-300/10 border-red-300/15",
-    emerald: "text-emerald-200 bg-emerald-300/10 border-emerald-300/15",
-  };
+function RiskScoreCard({ analysis }: { analysis: ScamAnalysis }) {
+  const danger = isDangerRisk(analysis.riskLevel);
 
   return (
-    <ShellCard className="p-5">
-      <div className="flex items-center gap-4">
-        <div
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl border ${toneMap[tone]}`}
-        >
-          {icon}
+    <Card>
+      <p className="text-sm font-medium text-[var(--fg)]">Risk Score</p>
+
+      <div className="mt-3 flex items-center gap-4">
+        <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full">
+          <div className="absolute inset-0 rounded-full border-[8px] border-white/10" />
+          <div
+            className={`absolute inset-0 rounded-full border-[8px] ${
+              danger ? "border-red-500" : "border-cyan-300"
+            } border-b-transparent border-l-transparent`}
+          />
+          <div className="text-center">
+            <p className="text-2xl font-semibold text-[var(--fg)]">
+              {analysis.scamProbability}
+            </p>
+            <p className="text-[10px] text-[var(--muted)]">/100</p>
+          </div>
         </div>
 
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--muted-2)]">
-            {label}
+          <p className={danger ? "text-lg font-semibold text-red-300" : "text-lg font-semibold text-cyan-300"}>
+            {analysis.riskLevel} Risk
           </p>
-
-          <p className="mt-1 truncate text-xl font-semibold text-[var(--fg)]">
-            {value}
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            {analysis.confidence} confidence
           </p>
-
-          <p className="mt-1 text-sm text-[var(--muted)]">{detail}</p>
+          <div className="mt-3 h-9 w-32">
+            <MiniLineChart danger={danger} />
+          </div>
         </div>
       </div>
-    </ShellCard>
+    </Card>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  detail,
+  tone,
+  chart,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  tone: "red" | "cyan";
+  chart: "bars" | "none";
+}) {
+  return (
+    <Card>
+      <p className="text-sm font-medium text-[var(--fg)]">{title}</p>
+
+      <div className="mt-5 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-3xl font-semibold text-[var(--fg)]">{value}</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">{detail}</p>
+        </div>
+
+        {chart === "bars" ? (
+          <MiniBars />
+        ) : (
+          <div
+            className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
+              tone === "red" ? "bg-red-400/12 text-red-300" : "bg-cyan-300/12 text-cyan-300"
+            }`}
+          >
+            <Users className="h-8 w-8" />
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function ProtectionLevelCard() {
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-[var(--fg)]">Protection Level</p>
+          <p className="mt-4 text-xl font-semibold text-emerald-300">Maximum</p>
+          <p className="mt-1 text-sm text-[var(--muted)]">All systems active</p>
+        </div>
+
+        <div className="relative flex h-20 w-20 items-center justify-center">
+          <div className="absolute inset-0 rounded-full bg-emerald-400/10 blur-xl" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-300 shadow-[0_0_35px_rgba(34,197,94,0.18)]">
+            <ShieldCheck className="h-9 w-9" />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full w-[94%] rounded-full bg-emerald-400 shadow-[0_0_24px_rgba(34,197,94,0.55)]" />
+      </div>
+    </Card>
   );
 }
 
@@ -789,18 +832,18 @@ function AnalyzerPanel({
   audioFileName: string | null;
 }) {
   return (
-    <ShellCard className="border-cyan-300/15">
-      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <Card>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
+          <p className="text-xs font-medium uppercase tracking-[0.34em] text-cyan-300">
             Scan your content
           </p>
-          <h2 className="mt-1 text-2xl font-semibold text-[var(--fg)]">
+          <h2 className="mt-1 text-xl font-semibold text-[var(--fg)]">
             Paste a message, transcript, or upload audio
           </h2>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm font-semibold text-amber-200">
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm font-medium text-amber-200">
           <Users className="h-4 w-4" />
           Family Mode
           <input
@@ -822,30 +865,30 @@ function AnalyzerPanel({
         <ModeButton
           active={mode === "transcript"}
           icon={<Mic className="h-4 w-4" />}
-          label="Call transcript"
+          label="Call Transcript"
           onClick={() => setMode("transcript")}
         />
         <ModeButton
           active={mode === "audio"}
           icon={<AudioLines className="h-4 w-4" />}
-          label="Audio upload"
+          label="Audio File"
           onClick={() => setMode("audio")}
         />
       </div>
 
       {mode === "audio" && (
-        <div className="mb-4 rounded-3xl border border-dashed border-cyan-300/30 bg-cyan-300/10 p-4">
-          <label className="flex cursor-pointer flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="mb-3 rounded-2xl border border-dashed border-cyan-300/30 bg-cyan-300/10 p-3">
+          <label className="flex cursor-pointer items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300 text-slate-950">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-300 text-slate-950">
                 <Upload className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold text-[var(--fg)]">
+                <p className="text-sm font-medium text-[var(--fg)]">
                   Upload call recording
                 </p>
-                <p className="text-sm text-[var(--muted)]">
-                  Audio is transcribed before scam analysis.
+                <p className="text-xs text-[var(--muted)]">
+                  Audio is transcribed before analysis.
                 </p>
               </div>
             </div>
@@ -859,13 +902,13 @@ function AnalyzerPanel({
               }
             />
 
-            <span className="rounded-full bg-[var(--fg)] px-4 py-2 text-xs font-semibold text-[var(--bg)]">
-              Choose file
+            <span className="rounded-xl bg-[var(--fg)] px-3 py-2 text-xs font-medium text-[var(--bg)]">
+              Choose
             </span>
           </label>
 
           {audioFileName && (
-            <p className="mt-3 flex items-center gap-2 text-sm text-cyan-300">
+            <p className="mt-2 flex items-center gap-2 text-xs text-cyan-300">
               <FileAudio className="h-4 w-4" />
               Uploaded: {audioFileName}
             </p>
@@ -873,41 +916,41 @@ function AnalyzerPanel({
         </div>
       )}
 
+      <textarea
+        value={input}
+        onChange={(event) => setInput(event.target.value)}
+        rows={7}
+        className="thin-scrollbar w-full resize-none rounded-2xl border border-[var(--line)] bg-[var(--input)] p-4 font-mono text-sm leading-6 text-[var(--fg)] outline-none transition placeholder:text-[var(--muted2)] focus:border-red-300/50"
+        placeholder="Paste a suspicious message here..."
+      />
+
       <LoadingPipeline
         stage={analysisStage}
         transcriptionSource={transcriptionSource}
         transcriptionModel={transcriptionModel}
       />
 
-      <textarea
-        value={input}
-        onChange={(event) => setInput(event.target.value)}
-        rows={9}
-        className="thin-scrollbar w-full resize-none rounded-3xl border border-[var(--line)] bg-[var(--input)] p-5 font-mono text-sm leading-6 text-[var(--fg)] outline-none transition placeholder:text-[var(--muted-2)] focus:border-cyan-300/50"
-        placeholder="Paste a suspicious message, call transcript, or uploaded audio transcript here..."
-      />
-
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           onClick={onAnalyze}
           disabled={isAnalyzing || !input.trim() || analysisStage === "transcribing"}
-          className="rounded-full bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(239,68,68,0.28)] transition hover:bg-red-400 disabled:opacity-50"
+          className="rounded-xl bg-red-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_30px_rgba(239,68,68,0.32)] transition hover:bg-red-400 disabled:opacity-50"
         >
           {isAnalyzing
-            ? "Analyzing risk..."
+            ? "Analyzing..."
             : analysisStage === "transcribing"
-              ? "Transcribing audio..."
-              : "Analyze now"}
+              ? "Transcribing..."
+              : "Analyze Now"}
         </button>
 
         <button
           onClick={() => setInput("")}
-          className="rounded-full border border-[var(--line)] bg-white/[0.04] px-6 py-3 text-sm font-semibold text-[var(--fg)] transition hover:border-red-300/30"
+          className="rounded-xl border border-[var(--line)] bg-white/[0.04] px-5 py-3 text-sm font-medium text-[var(--fg)] transition hover:border-red-300/30"
         >
           Clear
         </button>
       </div>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -920,263 +963,238 @@ function LoadingPipeline({
   transcriptionSource: "none" | "ai" | "simulated";
   transcriptionModel: string | null;
 }) {
-  const steps = [
-    {
-      id: "transcribing",
-      label: "Transcribing",
-      description:
-        transcriptionSource === "ai"
-          ? `Audio transcribed with ${transcriptionModel || "OpenAI"}`
-          : transcriptionSource === "simulated"
-            ? "Transcription fallback used"
-            : "Waiting for audio upload",
-    },
-    {
-      id: "analyzing",
-      label: "Analyzing",
-      description: "Checking scam intent, red flags, and manipulation tactics",
-    },
-    {
-      id: "ready",
-      label: "Report ready",
-      description: "Risk score, evidence, and safe next steps generated",
-    },
-  ] as const;
-
-  function getStepState(stepId: (typeof steps)[number]["id"]) {
-    if (stage === "error") {
-      if (stepId === "transcribing" && transcriptionSource === "simulated") {
-        return "warning";
-      }
-
-      return "idle";
-    }
-
-    if (stage === "ready") return "done";
-
-    if (stage === "transcribed") {
-      return stepId === "transcribing" ? "done" : "idle";
-    }
-
-    if (stage === "analyzing") {
-      if (stepId === "transcribing") return "done";
-      if (stepId === "analyzing") return "active";
-      return "idle";
-    }
-
-    if (stage === "transcribing") {
-      return stepId === "transcribing" ? "active" : "idle";
-    }
-
-    return "idle";
+  if (stage === "idle") {
+    return null;
   }
 
+  const label =
+    stage === "transcribing"
+      ? "Transcribing audio..."
+      : stage === "transcribed"
+        ? `Transcribed with ${transcriptionModel || "OpenAI"}`
+        : stage === "analyzing"
+          ? "Analyzing scam signals..."
+          : stage === "ready"
+            ? "Report ready"
+            : transcriptionSource === "simulated"
+              ? "Transcription fallback used"
+              : "Analysis fallback used";
+
   return (
-    <div className="mb-4 rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
-      <div className="grid gap-3 md:grid-cols-3">
-        {steps.map((step) => {
-          const state = getStepState(step.id);
-
-          return (
-            <div
-              key={step.id}
-              className={`rounded-2xl border p-3 ${
-                state === "done"
-                  ? "border-emerald-300/20 bg-emerald-300/10"
-                  : state === "active"
-                    ? "border-cyan-300/30 bg-cyan-300/10"
-                    : state === "warning"
-                      ? "border-amber-300/30 bg-amber-300/10"
-                      : "border-[var(--line)] bg-white/[0.03]"
-              }`}
-            >
-              <div className="mb-2 flex items-center gap-2">
-                <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
-                    state === "done"
-                      ? "bg-emerald-300 text-slate-950"
-                      : state === "active"
-                        ? "bg-cyan-300 text-slate-950"
-                        : state === "warning"
-                          ? "bg-amber-300 text-slate-950"
-                          : "bg-white/10 text-[var(--muted)]"
-                  }`}
-                >
-                  {state === "done" ? "✓" : state === "active" ? "…" : "•"}
-                </span>
-
-                <p className="text-sm font-semibold text-[var(--fg)]">
-                  {step.label}
-                </p>
-              </div>
-
-              <p className="text-xs leading-5 text-[var(--muted)]">
-                {step.description}
-              </p>
-            </div>
-          );
-        })}
+    <div className="mt-3 rounded-2xl border border-[var(--line)] bg-white/[0.04] px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span
+          className={`h-2.5 w-2.5 rounded-full ${
+            stage === "ready"
+              ? "bg-emerald-400"
+              : stage === "error"
+                ? "bg-amber-400"
+                : "bg-cyan-300"
+          } shadow-[0_0_16px_currentColor]`}
+        />
+        <p className="text-sm font-medium text-[var(--fg)]">{label}</p>
       </div>
-
-      {stage === "error" && (
-        <p className="mt-3 text-sm text-amber-300">
-          Audio transcription failed, so CallProof used the demo transcript
-          fallback. Text analysis still works normally.
-        </p>
-      )}
     </div>
   );
 }
 
-function ResultPanel({
+function LatestAnalysisPanel({
   analysis,
   isAnalyzing,
   aiEnabled,
   apiStatus,
+  dangerous,
   onExport,
 }: {
   analysis: ScamAnalysis;
   isAnalyzing: boolean;
   aiEnabled: boolean;
   apiStatus: "idle" | "ai" | "fallback" | "error";
+  dangerous: boolean;
   onExport: () => void;
 }) {
   const statusText = isAnalyzing
     ? "Analyzing"
     : aiEnabled
-      ? "AI semantic review"
+      ? "AI Review"
       : apiStatus === "fallback"
-        ? "Rule fallback"
+        ? "Rule Fallback"
         : apiStatus === "error"
-          ? "Offline fallback"
-          : "Local preview";
-
-  const isDanger =
-    analysis.riskLevel === "Critical" || analysis.riskLevel === "High";
+          ? "Offline Fallback"
+          : "Local Preview";
 
   return (
-    <ShellCard>
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <Card danger={dangerous}>
+      <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">
-            Latest analysis
+          <p className="text-xs font-medium uppercase tracking-[0.34em] text-cyan-300">
+            Latest Analysis
           </p>
-
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--fg)]">
+          <h2 className="mt-1 text-xl font-semibold text-white">
             Scam risk decision
           </h2>
         </div>
 
-        <span className="rounded-full border border-[var(--line)] bg-white/[0.04] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
-          {statusText}
-        </span>
+        <button
+          onClick={onExport}
+          className="rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/70"
+        >
+          View Report
+        </button>
       </div>
 
-      <div
-        className={`relative overflow-hidden rounded-[2rem] border p-5 ${
-          isDanger
-            ? "border-red-400/35 bg-[linear-gradient(135deg,rgba(127,29,29,0.46),rgba(15,23,42,0.68)),radial-gradient(circle_at_86%_22%,rgba(239,68,68,0.24),transparent_34%)]"
-            : getRiskStyle(analysis.riskLevel)
-        }`}
-      >
-        <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full border border-red-300/20" />
-        <div className="absolute -right-3 top-12 h-20 w-20 rounded-full border border-red-300/10" />
-
-        <div className="relative flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-75">
-              Scam probability
-            </p>
-
-            <p className="mt-2 text-7xl font-bold tracking-tight text-white">
+      <div className="grid gap-4 md:grid-cols-[1fr_148px]">
+        <div>
+          <div className="flex items-center gap-4">
+            <p className="text-6xl font-bold tracking-tight text-red-400">
               {isAnalyzing ? "..." : `${analysis.scamProbability}%`}
             </p>
 
-            <p className="mt-2 text-lg font-semibold text-white">
-              {analysis.riskLevel} risk
-            </p>
+            <div className="rounded-xl border border-red-300/25 bg-red-300/10 px-4 py-3 text-red-100">
+              <div className="flex items-center gap-2">
+                <Skull className="h-5 w-5" />
+                <span className="text-sm font-semibold">
+                  {analysis.riskLevel} Risk
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-red-300/25 bg-red-400/15 text-red-200 shadow-[0_0_35px_rgba(248,113,113,0.18)]">
-            {isDanger ? (
-              <Skull className="h-8 w-8" />
-            ) : (
-              <ShieldCheck className="h-8 w-8" />
-            )}
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <AnalysisMeta label="Scan probability" value={`${analysis.scamProbability}%`} />
+            <AnalysisMeta label="Type" value={analysis.attackType} />
+            <AnalysisMeta label="Source" value={statusText} />
+            <AnalysisMeta label="Confidence" value={analysis.confidence} />
           </div>
         </div>
 
-        <div className="relative mt-5 h-3 overflow-hidden rounded-full bg-white/15">
-          <div
-            className={`h-full rounded-full transition-all duration-700 ${
-              isDanger ? "bg-red-300" : "bg-cyan-300"
-            }`}
-            style={{ width: `${analysis.scamProbability}%` }}
-          />
-        </div>
-
-        <div className="relative mt-4 grid gap-3 sm:grid-cols-3">
-          <ResultMeta label="Risk" value={analysis.riskLevel} />
-          <ResultMeta label="Confidence" value={analysis.confidence} />
-          <ResultMeta label="Type" value={analysis.attackType} />
-        </div>
+        <RadarCircle />
       </div>
 
-      <div className="mt-4 rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
-          Explanation
-        </p>
+      <div className="mt-4">
+        <p className="mb-2 text-sm font-medium text-white">Key red flags</p>
 
-        <p className="text-sm leading-6 text-[var(--muted)]">
-          {analysis.summary}
-        </p>
+        <div className="space-y-1.5">
+          {(analysis.redFlags.length ? analysis.redFlags : ["No strong red flags detected"])
+            .slice(0, 4)
+            .map((flag) => (
+              <div key={flag} className="flex items-center gap-2 text-sm text-white/70">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]" />
+                {flag}
+              </div>
+            ))}
+        </div>
       </div>
-
-      <button
-        onClick={onExport}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--fg)] px-5 py-3 text-sm font-semibold text-[var(--bg)] transition hover:bg-cyan-200"
-      >
-        <Download className="h-4 w-4" />
-        Export safety report
-      </button>
-    </ShellCard>
+    </Card>
   );
 }
 
-function ResultMeta({ label, value }: { label: string; value: string }) {
+function AnalysisMeta({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-      <p className="text-[10px] uppercase tracking-[0.18em] opacity-50">
+    <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-white/40">
         {label}
       </p>
-      <p className="mt-1 truncate font-semibold">{value}</p>
+      <p className="mt-1 truncate text-sm font-medium text-white">{value}</p>
     </div>
   );
 }
 
-function ModeButton({
-  active,
-  label,
-  icon,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  icon: ReactNode;
-  onClick: () => void;
-}) {
+function RadarCircle() {
   return (
-    <button
-      onClick={onClick}
-      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-        active
-          ? "border-red-300/50 bg-red-300/15 text-red-200"
-          : "border-[var(--line)] bg-white/[0.04] text-[var(--muted)] hover:border-cyan-300/30 hover:text-[var(--fg)]"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
+    <div className="relative flex h-[148px] w-[148px] items-center justify-center overflow-hidden rounded-full border border-red-400/25 bg-red-500/5">
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.12)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.12)_1px,transparent_1px)] bg-[size:14px_14px]" />
+      <div className="absolute h-[118px] w-[118px] rounded-full border border-red-400/25" />
+      <div className="absolute h-[82px] w-[82px] rounded-full border border-red-400/25" />
+      <div className="absolute h-[46px] w-[46px] rounded-full border border-red-400/25" />
+      <div className="absolute h-[1px] w-full bg-red-400/25" />
+      <div className="absolute h-full w-[1px] bg-red-400/25" />
+      <div className="absolute h-4 w-4 rounded-full bg-red-400 shadow-[0_0_28px_rgba(239,68,68,0.95)]" />
+      <div className="absolute h-28 w-28 animate-pulse rounded-full bg-red-400/10" />
+    </div>
+  );
+}
+
+function RecentAlertsPanel() {
+  const alerts = [
+    {
+      title: "High Risk Call Detected",
+      detail: "Bank impersonation attempt",
+      time: "2m ago",
+      severity: "High",
+      icon: <Phone className="h-4 w-4" />,
+      tone: "red",
+    },
+    {
+      title: "Suspicious Message",
+      detail: "Prize claim link detected",
+      time: "15m ago",
+      severity: "Medium",
+      icon: <MessageSquareText className="h-4 w-4" />,
+      tone: "amber",
+    },
+    {
+      title: "Unsafe Link Blocked",
+      detail: "Phishing website detected",
+      time: "31m ago",
+      severity: "Medium",
+      icon: <Globe className="h-4 w-4" />,
+      tone: "cyan",
+    },
+  ];
+
+  return (
+    <Card danger>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="flex items-center gap-2 text-lg font-semibold text-white">
+          <BadgeAlert className="h-5 w-5 text-red-300" />
+          Recent Alerts
+        </h3>
+
+        <button className="rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-white/70">
+          View All
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {alerts.map((alert) => (
+          <div
+            key={alert.title}
+            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+          >
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                alert.tone === "red"
+                  ? "bg-red-400/15 text-red-200"
+                  : alert.tone === "amber"
+                    ? "bg-amber-400/15 text-amber-200"
+                    : "bg-cyan-400/15 text-cyan-200"
+              }`}
+            >
+              {alert.icon}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">{alert.title}</p>
+              <p className="mt-0.5 truncate text-xs text-white/45">{alert.detail}</p>
+            </div>
+
+            <div className="text-right">
+              <span
+                className={`rounded-full border px-2 py-1 text-[10px] font-medium ${
+                  alert.tone === "red"
+                    ? "border-red-300/20 bg-red-300/10 text-red-100"
+                    : "border-amber-300/20 bg-amber-300/10 text-amber-100"
+                }`}
+              >
+                {alert.severity}
+              </span>
+              <p className="mt-1 text-[10px] text-white/35">{alert.time}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
@@ -1188,13 +1206,13 @@ function DemoCasesPanel({
   onLoadDemo: (demo: DemoCase) => void;
 }) {
   return (
-    <ShellCard>
+    <Card>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-300">
+          <p className="text-xs font-medium uppercase tracking-[0.32em] text-cyan-300">
             Demo cases
           </p>
-          <h3 className="mt-1 text-xl font-semibold text-[var(--fg)]">
+          <h3 className="mt-1 text-lg font-semibold text-[var(--fg)]">
             Realistic scam attempts
           </h3>
         </div>
@@ -1202,95 +1220,27 @@ function DemoCasesPanel({
         <p className="text-sm text-[var(--muted)]">{demoCases.length} cases</p>
       </div>
 
-      <div className="space-y-3">
-        {demoCases.slice(0, 5).map((demo) => (
+      <div className="grid gap-3 md:grid-cols-2">
+        {demoCases.map((demo) => (
           <button
             key={demo.id}
             onClick={() => onLoadDemo(demo)}
-            className={`flex w-full items-center justify-between gap-3 rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 ${
+            className={`flex items-center justify-between gap-3 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 ${
               selectedDemoId === demo.id
                 ? "border-red-300/50 bg-red-300/10"
                 : "border-[var(--line)] bg-white/[0.04] hover:border-cyan-300/30"
             }`}
           >
             <div>
-              <p className="font-semibold text-[var(--fg)]">{demo.title}</p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
-                {demo.subtitle}
-              </p>
+              <p className="text-sm font-medium text-[var(--fg)]">{demo.title}</p>
+              <p className="mt-1 text-xs text-[var(--muted)]">{demo.subtitle}</p>
             </div>
 
-            <ChevronRight className="h-4 w-4 text-[var(--muted-2)]" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-[var(--muted2)]" />
           </button>
         ))}
       </div>
-    </ShellCard>
-  );
-}
-
-function RecentAlertsPanel() {
-  const alerts = [
-    {
-      title: "Potential fraudulent call",
-      detail: "Bank impersonation / OTP request",
-      time: "2m ago",
-      severity: "High risk",
-      icon: <Phone className="h-5 w-5" />,
-    },
-    {
-      title: "Suspicious message",
-      detail: "Delivery payment link detected",
-      time: "15m ago",
-      severity: "Scam",
-      icon: <MessageSquareText className="h-5 w-5" />,
-    },
-    {
-      title: "Unsafe link pattern",
-      detail: "Shortened URL and urgency language",
-      time: "31m ago",
-      severity: "Warning",
-      icon: <Globe className="h-5 w-5" />,
-    },
-  ];
-
-  return (
-    <ShellCard danger>
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-xl font-semibold text-white">
-          <BadgeAlert className="h-5 w-5 text-red-300" />
-          Recent alerts
-        </h3>
-
-        <button className="text-sm font-semibold text-red-200/80">
-          View all
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {alerts.map((alert) => (
-          <div
-            key={alert.title}
-            className="flex items-center gap-3 rounded-3xl border border-red-300/10 bg-black/25 p-4"
-          >
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-400/15 text-red-200">
-              {alert.icon}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-white">{alert.title}</p>
-              <p className="mt-1 text-sm text-white/45">{alert.detail}</p>
-            </div>
-
-            <div className="text-right">
-              <span className="rounded-full border border-red-300/20 bg-red-300/10 px-3 py-1 text-xs font-semibold text-red-100">
-                {alert.severity}
-              </span>
-              <p className="mt-2 text-xs text-white/35">{alert.time}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -1313,7 +1263,7 @@ function SignalPanel({
       : "border-amber-300/15 bg-amber-300/10 text-amber-100";
 
   return (
-    <ShellCard>
+    <Card>
       <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--fg)]">
         {icon}
         {title}
@@ -1324,7 +1274,7 @@ function SignalPanel({
           items.slice(0, 6).map((item) => (
             <div
               key={item}
-              className={`rounded-2xl border p-3 text-sm ${toneClass}`}
+              className={`rounded-xl border p-3 text-sm ${toneClass}`}
             >
               {item}
             </div>
@@ -1333,7 +1283,7 @@ function SignalPanel({
           <p className="text-sm text-[var(--muted)]">{empty}</p>
         )}
       </div>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -1347,7 +1297,7 @@ function SafeReplyPanel({
   hasAnalyzed: boolean;
 }) {
   return (
-    <section className="rounded-[2rem] border border-emerald-300/15 bg-emerald-300/10 p-5 backdrop-blur-xl">
+    <section className="rounded-[18px] border border-emerald-300/15 bg-emerald-300/10 p-4 backdrop-blur-xl">
       <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-[var(--fg)]">
         <ShieldCheck className="h-5 w-5 text-emerald-300" />
         Safe action
@@ -1358,8 +1308,8 @@ function SafeReplyPanel({
       </p>
 
       {familyMode && (
-        <div className="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-3">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
+        <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3">
+          <p className="mb-1 text-xs font-medium uppercase tracking-[0.18em] text-amber-200">
             Family Mode
           </p>
           <p className="text-sm leading-6 text-[var(--muted)]">
@@ -1369,7 +1319,7 @@ function SafeReplyPanel({
       )}
 
       {!hasAnalyzed && (
-        <p className="mt-4 text-xs text-[var(--muted-2)]">
+        <p className="mt-4 text-xs text-[var(--muted2)]">
           Run analysis to save this result into scan history.
         </p>
       )}
@@ -1379,9 +1329,9 @@ function SafeReplyPanel({
 
 function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
   return (
-    <ShellCard>
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
-        <ClipboardCheck className="h-6 w-6 text-cyan-300" />
+    <Card>
+      <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[var(--fg)]">
+        <ClipboardCheck className="h-5 w-5 text-cyan-300" />
         Evidence highlights
       </h3>
 
@@ -1390,7 +1340,7 @@ function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
           analysis.evidence.map((item, index) => (
             <div
               key={`${item.text}-${index}`}
-              className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4"
+              className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-4"
             >
               <p className="font-mono text-sm text-cyan-300">“{item.text}”</p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
@@ -1399,12 +1349,12 @@ function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
             </div>
           ))
         ) : (
-          <p className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
+          <p className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
             No suspicious evidence highlighted yet.
           </p>
         )}
       </div>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -1420,9 +1370,9 @@ function NextStepsPanel({
   aiEnabled: boolean;
 }) {
   return (
-    <ShellCard>
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
-        <CheckCircle2 className="h-6 w-6 text-emerald-300" />
+    <Card>
+      <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[var(--fg)]">
+        <CheckCircle2 className="h-5 w-5 text-emerald-300" />
         What to do now
       </h3>
 
@@ -1430,7 +1380,7 @@ function NextStepsPanel({
         {analysis.nextSteps.map((step) => (
           <div
             key={step}
-            className="flex gap-3 rounded-2xl border border-[var(--line)] bg-white/[0.04] p-3 text-sm text-[var(--muted)]"
+            className="flex gap-3 rounded-xl border border-[var(--line)] bg-white/[0.04] p-3 text-sm text-[var(--muted)]"
           >
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
             <span>{step}</span>
@@ -1441,12 +1391,12 @@ function NextStepsPanel({
       <button
         onClick={() => downloadReport({ input, mode, analysis, aiEnabled })}
         disabled={!input.trim()}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-emerald-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:opacity-50"
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-300 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:opacity-50"
       >
         <Download className="h-4 w-4" />
         Export safety report
       </button>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -1458,10 +1408,10 @@ function HistoryPanel({
   onClear: () => void;
 }) {
   return (
-    <ShellCard>
+    <Card>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
-          <History className="h-6 w-6 text-cyan-300" />
+        <h3 className="flex items-center gap-2 text-xl font-semibold text-[var(--fg)]">
+          <History className="h-5 w-5 text-cyan-300" />
           Scan history
         </h3>
 
@@ -1478,20 +1428,18 @@ function HistoryPanel({
           history.map((item) => (
             <div
               key={item.id}
-              className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4"
+              className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-semibold text-[var(--fg)]">
-                    {item.attackType}
-                  </p>
+                  <p className="font-medium text-[var(--fg)]">{item.attackType}</p>
                   <p className="mt-1 text-xs text-[var(--muted)]">
                     {new Date(item.createdAt).toLocaleString()} • {item.mode}
                   </p>
                 </div>
 
                 <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${getRiskStyle(
+                  className={`rounded-full border px-3 py-1 text-xs font-medium ${getRiskStyle(
                     item.riskLevel
                   )}`}
                 >
@@ -1501,20 +1449,20 @@ function HistoryPanel({
             </div>
           ))
         ) : (
-          <p className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
+          <p className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-4 text-sm text-[var(--muted)]">
             No scans yet. Run your first analysis.
           </p>
         )}
       </div>
-    </ShellCard>
+    </Card>
   );
 }
 
 function EducationPanel() {
   return (
-    <ShellCard>
-      <h3 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-[var(--fg)]">
-        <Sparkles className="h-6 w-6 text-amber-300" />
+    <Card>
+      <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-[var(--fg)]">
+        <Sparkles className="h-5 w-5 text-amber-300" />
         Scam education
       </h3>
 
@@ -1540,7 +1488,7 @@ function EducationPanel() {
           text="Family Mode explains risk in simpler language for people who may be less comfortable with technology."
         />
       </div>
-    </ShellCard>
+    </Card>
   );
 }
 
@@ -1554,12 +1502,70 @@ function EducationCard({
   text: string;
 }) {
   return (
-    <div className="rounded-3xl border border-[var(--line)] bg-white/[0.04] p-4">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-300/10 text-amber-300">
+    <div className="rounded-2xl border border-[var(--line)] bg-white/[0.04] p-4">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-300/10 text-amber-300">
         {icon}
       </div>
-      <p className="font-semibold text-[var(--fg)]">{title}</p>
+      <p className="font-medium text-[var(--fg)]">{title}</p>
       <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{text}</p>
+    </div>
+  );
+}
+
+function ModeButton({
+  active,
+  label,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition ${
+        active
+          ? "border-red-300/50 bg-red-300/15 text-red-200"
+          : "border-[var(--line)] bg-white/[0.04] text-[var(--muted)] hover:border-cyan-300/30 hover:text-[var(--fg)]"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function MiniLineChart({ danger }: { danger: boolean }) {
+  const color = danger ? "bg-red-400" : "bg-cyan-300";
+
+  return (
+    <div className="flex h-full items-end gap-1">
+      {[20, 26, 18, 30, 24, 37, 21, 44, 28, 33].map((height, index) => (
+        <span
+          key={`${height}-${index}`}
+          className={`w-2 rounded-full ${color} opacity-80 shadow-[0_0_12px_currentColor]`}
+          style={{ height }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MiniBars() {
+  return (
+    <div className="flex h-20 items-end gap-1">
+      {[18, 28, 42, 34, 58, 77, 40, 66, 90, 36, 62, 48, 74, 32].map(
+        (height, index) => (
+          <span
+            key={`${height}-${index}`}
+            className="w-1.5 rounded-full bg-red-400/80 shadow-[0_0_10px_rgba(239,68,68,0.6)]"
+            style={{ height }}
+          />
+        )
+      )}
     </div>
   );
 }
