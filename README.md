@@ -22,13 +22,10 @@ CallProof helps people detect scam calls, fake messages, phishing attempts, OTP 
 
 ![CallProof critical risk dashboard](public/screenshots/01-dashboard-critical-dark.png)
 
-### Evidence and Next Steps
+### Evidence, Next Steps and Risk Breakdown
 
 ![CallProof evidence and next steps](public/screenshots/03-evidence-next-steps-dark.png)
 
-### Risk Breakdown
-
-![CallProof risk breakdown](public/screenshots/02-risk-breakdown-dark.png)
 
 ### Scan History and Scam Education
 
