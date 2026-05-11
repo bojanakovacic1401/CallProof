@@ -2,16 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import {
-  AudioLines,
-  BellRing,
-  FileText,
-  Radar,
-  ShieldCheck,
-  Siren,
-  Users,
-  Zap,
-} from "lucide-react";
+import { BellRing, Siren } from "lucide-react";
 
 import {
   defaultDemoCase,
@@ -198,7 +189,19 @@ export default function Home() {
   const [familyMode, setFamilyMode] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [audioFileName, setAudioFileName] = useState<string | null>(null);
-  const [history, setHistory] = useState<ScanHistoryItem[]>([]);
+const [history, setHistory] = useState<ScanHistoryItem[]>(() => {
+  if (typeof window === "undefined") return [];
+
+  const saved = window.localStorage.getItem("callproof-history");
+  if (!saved) return [];
+
+  try {
+    return JSON.parse(saved).slice(0, 8);
+  } catch {
+    window.localStorage.removeItem("callproof-history");
+    return [];
+  }
+});
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [analysisStage, setAnalysisStage] = useState<AnalysisStage>("idle");
   const [transcriptionSource, setTranscriptionSource] =
@@ -221,18 +224,6 @@ export default function Home() {
   >("idle");
 
   const analysis = serverAnalysis || localAnalysis;
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("callproof-history");
-
-    if (!saved) return;
-
-    try {
-      setHistory(JSON.parse(saved).slice(0, 8));
-    } catch {
-      window.localStorage.removeItem("callproof-history");
-    }
-  }, []);
 
   useEffect(() => {
     window.localStorage.setItem("callproof-history", JSON.stringify(history));
@@ -488,12 +479,10 @@ export default function Home() {
             >
               <EvidencePanel analysis={analysis} />
               <NextStepsPanel
-                analysis={analysis}
-                input={input}
-                mode={mode}
-                aiEnabled={aiEnabled}
-                onExport={exportCurrentReport}
-              />
+              analysis={analysis}
+              input={input}
+              onExport={exportCurrentReport}
+                />
             </div>
 
             <div

@@ -1,6 +1,5 @@
 import {
   AlertTriangle,
-  Download,
   ShieldCheck,
   Skull,
 } from "lucide-react";

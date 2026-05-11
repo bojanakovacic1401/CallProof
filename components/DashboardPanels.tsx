@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   BadgeAlert,
   Ban,
-  BellRing,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
@@ -13,12 +12,11 @@ import {
   MessageSquareText,
   Phone,
   ShieldCheck,
-  Siren,
   Sparkles,
   Users,
 } from "lucide-react";
 
-import type { DemoCase, InputMode, ScamAnalysis, ScanHistoryItem } from "@/lib/types";
+import type { DemoCase, ScamAnalysis, ScanHistoryItem } from "@/lib/types";
 import { demoCases } from "@/lib/demoCases";
 import { Card } from "./Card";
 
@@ -400,14 +398,10 @@ export function EvidencePanel({ analysis }: { analysis: ScamAnalysis }) {
 export function NextStepsPanel({
   analysis,
   input,
-  mode,
-  aiEnabled,
   onExport,
 }: {
   analysis: ScamAnalysis;
   input: string;
-  mode: InputMode;
-  aiEnabled: boolean;
   onExport: () => void;
 }) {
   return (
