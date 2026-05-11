@@ -6,7 +6,7 @@ It analyzes messages, call transcripts, and uploaded audio to estimate scam risk
 
 ## Hackathon Submission Materials
 
-- [Supporting Documentation PDF](./CallProof_supporting_documentation(1)(1).pdf)
+- [Supporting Documentation PDF](./CallProof_supporting_documentation.pdf)
 
 **Live demo:** https://call-proof.vercel.app/
 
